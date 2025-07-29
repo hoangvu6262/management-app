@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -12,8 +12,10 @@ import {
   Filter,
   CalendarDays,
   Trophy,
+  Loader2,
 } from "lucide-react";
 import { FootballMatchFilter } from "@/services/footballMatchService";
+import { useDebounceSearch } from "@/hooks/useDebounce";
 
 interface FiltersProps {
   filter: FootballMatchFilter;
@@ -21,17 +23,37 @@ interface FiltersProps {
 }
 
 export function Filters({ filter, onFilterChange }: FiltersProps) {
+  // Setup debounced search with 300ms delay
+  const handleSearch = useCallback(
+    (searchTerm: string) => {
+      onFilterChange("searchText", searchTerm || undefined);
+    },
+    [onFilterChange]
+  );
+
+  const { searchTerm, setSearchTerm, debouncedSearchTerm } = useDebounceSearch(
+    filter.searchText || "",
+    handleSearch,
+    300 // 300ms debounce delay
+  );
+
+  // Check if search is pending (user is typing but debounce hasn't triggered yet)
+  const isSearchPending = searchTerm !== debouncedSearchTerm && searchTerm.length > 0;
   return (
     <div className="px-6 pb-4 space-y-4">
       {/* Mobile/Tablet Filters */}
       <div className="flex flex-col gap-4 lg:hidden">
         {/* Search - Full width on mobile */}
         <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          {isSearchPending ? (
+            <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground animate-spin" />
+          ) : (
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          )}
           <Input
-            placeholder="Search stadium or team..."
-            value={filter.searchText || ""}
-            onChange={(e) => onFilterChange("searchText", e.target.value)}
+            placeholder="Search stadium or team... (searches as you type)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -109,11 +131,15 @@ export function Filters({ filter, onFilterChange }: FiltersProps) {
       <div className="hidden lg:flex lg:flex-row gap-4">
         {/* Search */}
         <div className="relative w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          {isSearchPending ? (
+            <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground animate-spin" />
+          ) : (
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          )}
           <Input
-            placeholder="Search stadium or team..."
-            value={filter.searchText || ""}
-            onChange={(e) => onFilterChange("searchText", e.target.value)}
+            placeholder="Search stadium or team... (searches as you type)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>

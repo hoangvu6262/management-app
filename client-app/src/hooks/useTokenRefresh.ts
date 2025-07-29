@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { logout, setUser } from '@/store/authSlice';
-import { authService } from '@/services/authService';
-import { tokenManager } from '@/services/tokenManager';
-import { isTokenExpired } from '@/services/api';
+import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { logout, setUser } from "@/store/authSlice";
+import { authService } from "@/services/authService";
+import { tokenManager } from "@/services/tokenManager";
+import { isTokenExpired } from "@/services/api";
 
 export function useTokenRefresh() {
   const dispatch = useAppDispatch();
@@ -25,44 +25,52 @@ export function useTokenRefresh() {
     const accessToken = authService.getAccessToken();
     const refreshToken = authService.getRefreshToken();
 
-    if (!accessToken || !refreshToken) {
+    if (!refreshToken) {
       dispatch(logout());
       return;
     }
 
-    // Check if access token is expired or about to expire (within 30 seconds)
-    if (isTokenExpired(accessToken)) {
+    // If no access token, try to refresh
+    if (!accessToken) {
       try {
         isRefreshingRef.current = true;
-        
-        const newAccessToken = await tokenManager.refreshToken();
-        
-        // Get updated user from authService after refresh
+        await tokenManager.refreshToken();
+
+        // Update Redux state with fresh user data
         const user = authService.getCurrentUser();
         if (user) {
           dispatch(setUser(user));
         }
-        
-        // Silent refresh - no notifications, no redirects
-        
       } catch (error) {
-        // Only logout on actual refresh failure - no notifications
         dispatch(logout());
-        
-        // Prevent multiple redirects
+
         if (!redirectedRef.current) {
           redirectedRef.current = true;
-          
-          // Soft redirect using Next.js router (no page refresh)
-          try {
-            router.push('/login');
-          } catch (routerError) {
-            // Fallback to hard redirect only if router fails
-            console.warn('Router redirect failed, using fallback:', routerError);
-            if (typeof window !== 'undefined') {
-              window.location.href = '/login';
-            }
-          }
+          router.push("/login");
+        }
+      } finally {
+        isRefreshingRef.current = false;
+      }
+      return;
+    }
+
+    // Check if access token is expired or about to expire
+    if (isTokenExpired(accessToken)) {
+      try {
+        isRefreshingRef.current = true;
+        await tokenManager.refreshToken();
+
+        // Update Redux state
+        const user = authService.getCurrentUser();
+        if (user) {
+          dispatch(setUser(user));
+        }
+      } catch (error) {
+        dispatch(logout());
+
+        if (!redirectedRef.current) {
+          redirectedRef.current = true;
+          router.push("/login");
         }
       } finally {
         isRefreshingRef.current = false;
@@ -76,10 +84,10 @@ export function useTokenRefresh() {
       clearInterval(refreshIntervalRef.current);
     }
 
-    // Check token every 30 seconds
+    // Check token every 60 seconds (reduced frequency)
     refreshIntervalRef.current = setInterval(() => {
       checkAndRefreshToken();
-    }, 30 * 1000);
+    }, 60 * 1000);
   };
 
   const stopTokenRefreshInterval = () => {
@@ -95,8 +103,9 @@ export function useTokenRefresh() {
     if (isAuthenticated) {
       // Initial check
       checkAndRefreshToken();
-      // DISABLED: Start interval to prevent excessive calls
-      // startTokenRefreshInterval();
+
+      // Start interval for automatic token checking
+      startTokenRefreshInterval();
     } else {
       stopTokenRefreshInterval();
     }
@@ -109,14 +118,18 @@ export function useTokenRefresh() {
   // Handle page visibility change to refresh token when user comes back
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && isAuthenticated && !isRefreshingRef.current) {
+      if (
+        document.visibilityState === "visible" &&
+        isAuthenticated &&
+        !isRefreshingRef.current
+      ) {
         checkAndRefreshToken();
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [isAuthenticated]);
 
@@ -128,9 +141,9 @@ export function useTokenRefresh() {
       }
     };
 
-    window.addEventListener('focus', handleFocus);
+    window.addEventListener("focus", handleFocus);
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [isAuthenticated]);
 

@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -5,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { NotificationToast } from '@/components/notifications/NotificationToast'
 
 interface SignupFormData {
   fullName: string;
@@ -41,7 +44,8 @@ export function SignupForm() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <>
+      <div className="min-h-screen flex">
       {/* Left side - Illustration */}
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 items-center justify-center p-8">
         <div className="max-w-md text-center">
@@ -270,6 +274,7 @@ export function SignupForm() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      <NotificationToast />
+    </>
   );
 }

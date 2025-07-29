@@ -47,9 +47,65 @@ class TokenManager {
   }
 
   private async performRefresh(): Promise<string> {
-    const { authService } = await import("@/services/authService");
-    const response = await authService.refreshToken();
-    return response.accessToken;
+    const Cookies = (await import("js-cookie")).default;
+    const refreshToken = Cookies.get("refreshToken");
+
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
+    }
+
+    try {
+      // Import authAxiosInstance to avoid circular dependency
+      const { authAxiosInstance } = await import("@/services/api");
+      const response = await authAxiosInstance.post("/auth/refresh-token", {
+        refreshToken,
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || "Refresh token failed");
+      }
+
+      const loginResponse = response.data.data;
+
+      // Update tokens in cookies
+      const expiresAt = new Date(loginResponse.expiresAt);
+
+      Cookies.set("accessToken", loginResponse.accessToken, {
+        expires: expiresAt,
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+      });
+
+      Cookies.set("refreshToken", loginResponse.refreshToken, {
+        expires: 7,
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+      });
+
+      Cookies.set("user", JSON.stringify(loginResponse.user), {
+        expires: 7,
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+      });
+
+      return loginResponse.accessToken;
+    } catch (error: any) {
+      // If refresh token is invalid/expired, clear all auth data
+      if (
+        error.response?.status === 401 ||
+        error.message?.includes("invalid") ||
+        error.message?.includes("expired")
+      ) {
+        Cookies.remove("accessToken");
+        Cookies.remove("refreshToken");
+        Cookies.remove("user");
+      }
+
+      throw error;
+    }
   }
 
   reset(): void {

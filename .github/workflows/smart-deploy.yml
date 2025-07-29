@@ -1,0 +1,74 @@
+name: Smart Deploy
+
+on:
+  push:
+    branches: [ main ]
+    # Only trigger if specific files changed
+    paths:
+      - 'server-app/**'
+      - 'client-app/**'
+      - 'docker-compose.yml'
+      - 'nginx.conf'
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      server-changed: ${{ steps.changes.outputs.server }}
+      client-changed: ${{ steps.changes.outputs.client }}
+      
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 2
+        
+    - uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: |
+          server:
+            - 'server-app/**'
+          client:
+            - 'client-app/**'
+          docker:
+            - 'docker-compose.yml'
+            - 'nginx.conf'
+
+  deploy:
+    needs: check-changes
+    runs-on: ubuntu-latest
+    if: needs.check-changes.outputs.server == 'true' || needs.check-changes.outputs.client == 'true'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy Changed Services
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          cd /home/ubuntu/ManagementApp
+          git pull origin main
+          
+          # Setup environment
+          chmod +x setup-production-env.sh
+          ./setup-production-env.sh
+          
+          # Deploy only changed services
+          if [ "${{ needs.check-changes.outputs.server }}" == "true" ]; then
+            echo "🔄 Rebuilding server-app..."
+            docker-compose up -d --build server-app
+          fi
+          
+          if [ "${{ needs.check-changes.outputs.client }}" == "true" ]; then
+            echo "🔄 Rebuilding client-app..."
+            docker-compose up -d --build client-app
+          fi
+          
+          # Restart nginx if needed
+          docker-compose restart nginx
+          
+          # Cleanup
+          docker system prune -f

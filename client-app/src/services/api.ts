@@ -4,7 +4,7 @@ import { tokenManager } from "./tokenManager";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
-// Create axios instance
+// Create axios instance for regular API calls
 const axiosInstance = axios.create({
   baseURL: API_URL,
   timeout: 10000,
@@ -14,14 +14,48 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
+// Create separate axios instance for auth operations (no interceptors)
+export const authAxiosInstance = axios.create({
+  baseURL: API_URL,
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  withCredentials: true,
+});
+
+// Add basic logging for auth axios instance
+authAxiosInstance.interceptors.request.use(
+  (config) => {
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+authAxiosInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Helper function to check if token is expired or about to expire
 const isTokenExpired = (token: string): boolean => {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
     const currentTime = Math.floor(Date.now() / 1000);
+    const expiryTime = payload.exp;
+    const timeUntilExpiry = expiryTime - currentTime;
+
     // Check if token expires in next 30 seconds
-    return payload.exp <= currentTime + 30;
-  } catch {
+    const isExpiring = timeUntilExpiry <= 30;
+
+    return isExpiring;
+  } catch (error) {
     return true;
   }
 };
@@ -53,6 +87,17 @@ const handleLogoutSilently = () => {
 // Request interceptor to add auth token and handle proactive refresh
 axiosInstance.interceptors.request.use(
   async (config) => {
+    // Skip interceptor for auth endpoints to avoid loops
+    const isAuthEndpoint =
+      config.url?.includes("/auth/login") ||
+      config.url?.includes("/auth/register") ||
+      config.url?.includes("/auth/refresh-token") ||
+      config.url?.includes("/auth/revoke-token");
+
+    if (isAuthEndpoint) {
+      return config;
+    }
+
     let token = Cookies.get("accessToken");
 
     // If no token exists, check if we have refresh token for auth-required endpoints
@@ -71,18 +116,19 @@ axiosInstance.interceptors.request.use(
           token = await tokenManager.refreshToken();
         } catch (error) {
           handleLogoutSilently();
-          return config; // Let request fail with 401
+          return config;
         }
       }
     }
 
-    // If we have a token, check if it's expired/expiring
+    // If we have a token, check if it's expired/expiring soon
     if (token && isTokenExpired(token) && tokenManager.canRefresh()) {
       try {
         token = await tokenManager.refreshToken();
       } catch (error) {
         handleLogoutSilently();
-        throw error;
+        // Don't throw error here, let the request proceed and handle 401 in response interceptor
+        return config;
       }
     }
 
@@ -106,6 +152,17 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
 
+    // Skip response interceptor for auth endpoints to avoid loops
+    const isAuthEndpoint =
+      originalRequest.url?.includes("/auth/login") ||
+      originalRequest.url?.includes("/auth/register") ||
+      originalRequest.url?.includes("/auth/refresh-token") ||
+      originalRequest.url?.includes("/auth/revoke-token");
+
+    if (isAuthEndpoint) {
+      return Promise.reject(error);
+    }
+
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -120,8 +177,15 @@ axiosInstance.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        // Clear tokens but don't redirect here - let the app handle it
+        // Clear tokens and trigger logout
         handleLogoutSilently();
+
+        // Trigger app-level logout if available
+        if (typeof window !== "undefined" && (window as any).handleLogout) {
+          setTimeout(() => {
+            (window as any).handleLogout();
+          }, 100);
+        }
 
         return Promise.reject(refreshError);
       }

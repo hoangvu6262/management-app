@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import '@/styles/globals.scss'
-import { AppLayout } from '@/components/app-layout'
 import { Providers } from '@/providers/Providers'
 import { AuthProvider } from '@/providers/AuthProvider'
 
@@ -33,7 +32,7 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased font-inter`}>
         <Providers>
           <AuthProvider>
-            <AppLayout>{children}</AppLayout>
+            {children}
           </AuthProvider>
         </Providers>
       </body>
