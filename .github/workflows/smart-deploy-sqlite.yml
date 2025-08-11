@@ -2,14 +2,14 @@ name: 🧠 Smart SQLite Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     # Only trigger if specific files changed
     paths:
-      - 'server-app/**'
-      - 'client-app/**'
-      - 'aws-deployment/**'
-      - 'docker-compose.yml'
-      - 'nginx.conf'
+      - "server-app/**"
+      - "client-app/**"
+      - "aws-deployment/**"
+      - "docker-compose.yml"
+      - "nginx.conf"
 
 jobs:
   check-changes:
@@ -18,24 +18,24 @@ jobs:
       server-changed: ${{ steps.changes.outputs.server }}
       client-changed: ${{ steps.changes.outputs.client }}
       deployment-changed: ${{ steps.changes.outputs.deployment }}
-      
+
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 2
-        
-    - uses: dorny/paths-filter@v2
-      id: changes
-      with:
-        filters: |
-          server:
-            - 'server-app/**'
-          client:
-            - 'client-app/**'
-          deployment:
-            - 'aws-deployment/**'
-            - 'docker-compose.yml'
-            - 'nginx.conf'
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            server:
+              - 'server-app/**'
+            client:
+              - 'client-app/**'
+            deployment:
+              - 'aws-deployment/**'
+              - 'docker-compose.yml'
+              - 'nginx.conf'
 
   deploy:
     needs: check-changes
@@ -44,130 +44,130 @@ jobs:
       needs.check-changes.outputs.server == 'true' || 
       needs.check-changes.outputs.client == 'true' || 
       needs.check-changes.outputs.deployment == 'true'
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: 📋 Smart Deployment Analysis
-      run: |
-        echo "🧠 Smart SQLite Deployment Starting"
-        echo "===================================="
-        echo "🔄 Server changed: ${{ needs.check-changes.outputs.server }}"
-        echo "⚛️ Client changed: ${{ needs.check-changes.outputs.client }}"
-        echo "🚀 Deployment changed: ${{ needs.check-changes.outputs.deployment }}"
-        echo "👤 Triggered by: ${{ github.actor }}"
-        echo "📝 Commit: ${{ github.sha }}"
-    
-    - name: 🚀 Smart Deploy to SQLite Production
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          echo "📋 Starting smart SQLite deployment..."
-          cd /home/ubuntu/ManagementApp
-          
-          echo "🔄 Pulling latest changes..."
-          git pull origin main
-          
-          cd aws-deployment
-          
-          echo "💾 Creating smart backup..."
-          bash enhanced-backup.sh
-          
-          # Determine deployment strategy based on changes
-          if [ "${{ needs.check-changes.outputs.deployment }}" == "true" ]; then
-            echo "🚀 Deployment config changed - full redeploy"
-            bash setup-sqlite.sh
-            bash deploy.sh
-            
-          elif [ "${{ needs.check-changes.outputs.server }}" == "true" ] && [ "${{ needs.check-changes.outputs.client }}" == "true" ]; then
-            echo "🔄 Both server and client changed - rebuild both"
-            docker-compose -f docker-compose.prod.yml up -d --build server-app client-app
-            
-          elif [ "${{ needs.check-changes.outputs.server }}" == "true" ]; then
-            echo "🏗️ Server changes only - rebuild server"
-            docker-compose -f docker-compose.prod.yml up -d --build server-app
-            
-          elif [ "${{ needs.check-changes.outputs.client }}" == "true" ]; then
-            echo "⚛️ Client changes only - rebuild client"
-            docker-compose -f docker-compose.prod.yml up -d --build client-app
-            
-          fi
-          
-          # Always restart nginx to ensure routing works
-          echo "🌐 Restarting nginx..."
-          docker-compose -f docker-compose.prod.yml restart nginx
-          
-          echo "⏳ Waiting for services..."
-          sleep 30
-          
-          echo "🏥 Running health verification..."
-          if bash health-check-sqlite.sh; then
-            echo "✅ Smart deployment successful!"
-          else
-            echo "❌ Health check failed!"
-            echo "📋 Checking logs..."
-            docker-compose -f docker-compose.prod.yml logs --tail=20
-            exit 1
-          fi
-          
-          echo "📊 Performance check..."
-          bash monitor-sqlite.sh
-          
-          echo "🧹 Cleanup..."
-          docker system prune -f
-          
-          echo "🎉 Smart SQLite deployment completed!"
-          echo "🌐 App: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
 
-    - name: 📊 Smart Deployment Summary
-      if: success()
-      run: |
-        echo "🧠 Smart SQLite Deployment Successful!"
-        echo "======================================"
-        echo "🔄 Server rebuilt: ${{ needs.check-changes.outputs.server }}"
-        echo "⚛️ Client rebuilt: ${{ needs.check-changes.outputs.client }}"
-        echo "🚀 Config updated: ${{ needs.check-changes.outputs.deployment }}"
-        echo "✅ Health checks: Passed"
-        echo "💾 Backup: Created"
-        echo "🗄️ Database: SQLite optimized"
-        echo ""
-        echo "⚡ Deployment was optimized based on actual changes!"
-        
-    - name: ❌ Smart Deployment Failed
-      if: failure()
-      run: |
-        echo "❌ Smart SQLite Deployment Failed!"
-        echo "=================================="
-        echo "🔍 Check EC2 logs for details"
-        echo "💾 Backup available for rollback"
-        echo "🛠️ Run health-check-sqlite.sh for diagnosis"
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 📋 Smart Deployment Analysis
+        run: |
+          echo "🧠 Smart SQLite Deployment Starting"
+          echo "===================================="
+          echo "🔄 Server changed: ${{ needs.check-changes.outputs.server }}"
+          echo "⚛️ Client changed: ${{ needs.check-changes.outputs.client }}"
+          echo "🚀 Deployment changed: ${{ needs.check-changes.outputs.deployment }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          echo "📝 Commit: ${{ github.sha }}"
+
+      - name: 🚀 Smart Deploy to SQLite Production
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "📋 Starting smart SQLite deployment..."
+            cd /home/ubuntu/management-app
+
+            echo "🔄 Pulling latest changes..."
+            git pull origin main
+
+            cd aws-deployment
+
+            echo "💾 Creating smart backup..."
+            bash enhanced-backup.sh
+
+            # Determine deployment strategy based on changes
+            if [ "${{ needs.check-changes.outputs.deployment }}" == "true" ]; then
+              echo "🚀 Deployment config changed - full redeploy"
+              bash setup-sqlite.sh
+              bash deploy.sh
+              
+            elif [ "${{ needs.check-changes.outputs.server }}" == "true" ] && [ "${{ needs.check-changes.outputs.client }}" == "true" ]; then
+              echo "🔄 Both server and client changed - rebuild both"
+              docker-compose -f docker-compose.prod.yml up -d --build server-app client-app
+              
+            elif [ "${{ needs.check-changes.outputs.server }}" == "true" ]; then
+              echo "🏗️ Server changes only - rebuild server"
+              docker-compose -f docker-compose.prod.yml up -d --build server-app
+              
+            elif [ "${{ needs.check-changes.outputs.client }}" == "true" ]; then
+              echo "⚛️ Client changes only - rebuild client"
+              docker-compose -f docker-compose.prod.yml up -d --build client-app
+              
+            fi
+
+            # Always restart nginx to ensure routing works
+            echo "🌐 Restarting nginx..."
+            docker-compose -f docker-compose.prod.yml restart nginx
+
+            echo "⏳ Waiting for services..."
+            sleep 30
+
+            echo "🏥 Running health verification..."
+            if bash health-check-sqlite.sh; then
+              echo "✅ Smart deployment successful!"
+            else
+              echo "❌ Health check failed!"
+              echo "📋 Checking logs..."
+              docker-compose -f docker-compose.prod.yml logs --tail=20
+              exit 1
+            fi
+
+            echo "📊 Performance check..."
+            bash monitor-sqlite.sh
+
+            echo "🧹 Cleanup..."
+            docker system prune -f
+
+            echo "🎉 Smart SQLite deployment completed!"
+            echo "🌐 App: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
+
+      - name: 📊 Smart Deployment Summary
+        if: success()
+        run: |
+          echo "🧠 Smart SQLite Deployment Successful!"
+          echo "======================================"
+          echo "🔄 Server rebuilt: ${{ needs.check-changes.outputs.server }}"
+          echo "⚛️ Client rebuilt: ${{ needs.check-changes.outputs.client }}"
+          echo "🚀 Config updated: ${{ needs.check-changes.outputs.deployment }}"
+          echo "✅ Health checks: Passed"
+          echo "💾 Backup: Created"
+          echo "🗄️ Database: SQLite optimized"
+          echo ""
+          echo "⚡ Deployment was optimized based on actual changes!"
+
+      - name: ❌ Smart Deployment Failed
+        if: failure()
+        run: |
+          echo "❌ Smart SQLite Deployment Failed!"
+          echo "=================================="
+          echo "🔍 Check EC2 logs for details"
+          echo "💾 Backup available for rollback"
+          echo "🛠️ Run health-check-sqlite.sh for diagnosis"
 
   performance-monitoring:
     needs: deploy
     runs-on: ubuntu-latest
     if: success()
-    
+
     steps:
-    - name: 📈 Post-deployment Performance Monitoring
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          echo "📈 Running post-deployment monitoring..."
-          cd /home/ubuntu/ManagementApp/aws-deployment
-          
-          # Wait a bit more for services to stabilize
-          sleep 60
-          
-          # Performance monitoring
-          bash log-performance.sh
-          
-          # Generate summary
-          bash aggregate-logs.sh
-          
-          echo "📊 Performance monitoring completed!"
+      - name: 📈 Post-deployment Performance Monitoring
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "📈 Running post-deployment monitoring..."
+            cd /home/ubuntu/management-app/aws-deployment
+
+            # Wait a bit more for services to stabilize
+            sleep 60
+
+            # Performance monitoring
+            bash log-performance.sh
+
+            # Generate summary
+            bash aggregate-logs.sh
+
+            echo "📊 Performance monitoring completed!"

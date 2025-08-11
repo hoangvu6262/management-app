@@ -21,7 +21,7 @@ fi
 
 # Stop containers to free up port 80
 echo "⏸️  Temporarily stopping containers..."
-cd /home/ubuntu/ManagementApp/aws-deployment
+cd /home/ubuntu/management-app/aws-deployment
 docker-compose -f docker-compose.prod.yml stop nginx
 
 # Get SSL certificate
@@ -34,18 +34,18 @@ certbot certonly --standalone \
     -d $DOMAIN
 
 # Create SSL directory in project
-mkdir -p /home/ubuntu/ManagementApp/aws-deployment/ssl
+mkdir -p /home/ubuntu/management-app/aws-deployment/ssl
 
 # Copy certificates to project directory
-cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /home/ubuntu/ManagementApp/aws-deployment/ssl/
-cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /home/ubuntu/ManagementApp/aws-deployment/ssl/
+cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /home/ubuntu/management-app/aws-deployment/ssl/
+cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /home/ubuntu/management-app/aws-deployment/ssl/
 
 # Update docker-compose to use SSL nginx config
 cp docker-compose.prod.yml docker-compose.prod.yml.backup
 
 # Update environment variables for HTTPS
 EC2_PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-cat > /home/ubuntu/ManagementApp/client-app/.env.production << EOF
+cat > /home/ubuntu/management-app/client-app/.env.production << EOF
 NEXT_PUBLIC_API_URL=https://$DOMAIN/api
 NEXT_PUBLIC_APP_NAME=Management App
 NEXT_PUBLIC_APP_VERSION=1.0.0
@@ -81,7 +81,7 @@ fi
 
 # Setup automatic renewal
 echo "🔄 Setting up automatic SSL renewal..."
-(crontab -l 2>/dev/null; echo "0 12 * * * /usr/bin/certbot renew --quiet --deploy-hook 'cd /home/ubuntu/ManagementApp/aws-deployment && docker-compose -f docker-compose.prod.yml restart nginx'") | crontab -
+(crontab -l 2>/dev/null; echo "0 12 * * * /usr/bin/certbot renew --quiet --deploy-hook 'cd /home/ubuntu/management-app/aws-deployment && docker-compose -f docker-compose.prod.yml restart nginx'") | crontab -
 
 echo ""
 echo "📋 SSL Setup Summary:"

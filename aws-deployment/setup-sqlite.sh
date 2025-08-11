@@ -7,7 +7,7 @@ set -e
 echo "🗄️ Setting up SQLite for Production on EC2..."
 
 # Get project directory
-PROJECT_DIR="/home/ubuntu/ManagementApp"
+PROJECT_DIR="/home/ubuntu/management-app"
 if [ ! -d "$PROJECT_DIR" ]; then
     PROJECT_DIR="$(pwd)/.."
 fi
@@ -90,8 +90,8 @@ cat > $PROJECT_DIR/aws-deployment/backup-sqlite.sh << 'EOF'
 #!/bin/bash
 # SQLite Backup Script
 
-BACKUP_DIR="/home/ubuntu/ManagementApp/data/backups"
-DB_FILE="/home/ubuntu/ManagementApp/data/database/management.db"
+BACKUP_DIR="/home/ubuntu/management-app/data/backups"
+DB_FILE="/home/ubuntu/management-app/data/database/management.db"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 echo "💾 Starting SQLite backup..."
@@ -128,9 +128,9 @@ cat > $PROJECT_DIR/aws-deployment/restore-sqlite.sh << 'EOF'
 #!/bin/bash
 # SQLite Restore Script
 
-BACKUP_DIR="/home/ubuntu/ManagementApp/data/backups"
-DB_FILE="/home/ubuntu/ManagementApp/data/database/management.db"
-PROJECT_DIR="/home/ubuntu/ManagementApp"
+BACKUP_DIR="/home/ubuntu/management-app/data/backups"
+DB_FILE="/home/ubuntu/management-app/data/database/management.db"
+PROJECT_DIR="/home/ubuntu/management-app"
 
 if [ -z "$1" ]; then
     echo "❌ Usage: bash restore-sqlite.sh [backup_filename]"
@@ -201,8 +201,8 @@ cat > $PROJECT_DIR/aws-deployment/maintain-sqlite.sh << 'EOF'
 #!/bin/bash
 # SQLite Maintenance Script
 
-DB_FILE="/home/ubuntu/ManagementApp/data/database/management.db"
-PROJECT_DIR="/home/ubuntu/ManagementApp"
+DB_FILE="/home/ubuntu/management-app/data/database/management.db"
+PROJECT_DIR="/home/ubuntu/management-app"
 
 echo "🔧 SQLite Maintenance Script"
 echo "=========================="
@@ -266,7 +266,7 @@ cat > $PROJECT_DIR/aws-deployment/health-check-sqlite.sh << 'EOF'
 #!/bin/bash
 # SQLite Health Check Script
 
-DB_FILE="/home/ubuntu/ManagementApp/data/database/management.db"
+DB_FILE="/home/ubuntu/management-app/data/database/management.db"
 
 echo "🏥 SQLite Health Check"
 echo "===================="
@@ -306,7 +306,7 @@ cat > $PROJECT_DIR/aws-deployment/monitor-sqlite.sh << 'EOF'
 #!/bin/bash
 # SQLite Monitoring Script
 
-DB_FILE="/home/ubuntu/ManagementApp/data/database/management.db"
+DB_FILE="/home/ubuntu/management-app/data/database/management.db"
 
 echo "📊 SQLite Monitoring Dashboard"
 echo "=============================="
@@ -343,7 +343,7 @@ SELECT 'Tables: ' || COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT
 echo "💿 Disk Space:"
 df -h $(dirname $DB_FILE) | tail -1 | awk '{print "  Available: " $4 " (" $5 " used)"}'
 
-BACKUP_DIR="/home/ubuntu/ManagementApp/data/backups"
+BACKUP_DIR="/home/ubuntu/management-app/data/backups"
 if [ -d "$BACKUP_DIR" ]; then
     echo ""
     echo "💾 Recent Backups:"

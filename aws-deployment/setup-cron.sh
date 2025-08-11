@@ -18,7 +18,7 @@ mkdir -p /home/ubuntu/logs
 echo "[$(date)] Starting health check..." >> $LOG_FILE
 
 # Check if containers are running
-cd /home/ubuntu/ManagementApp/aws-deployment
+cd /home/ubuntu/management-app/aws-deployment
 if ! docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
     echo "[$(date)] ERROR: Containers are not running, attempting restart..." >> $LOG_FILE
     docker-compose -f docker-compose.prod.yml up -d
@@ -86,7 +86,7 @@ mkdir -p /home/ubuntu/logs
 
 echo "[$(date)] Starting daily restart..." >> $LOG_FILE
 
-cd /home/ubuntu/ManagementApp/aws-deployment
+cd /home/ubuntu/management-app/aws-deployment
 
 # Graceful restart
 echo "[$(date)] Restarting containers..." >> $LOG_FILE
@@ -126,7 +126,7 @@ fi
 
 # Weekly backup on Sundays at 2 AM
 if ! grep -q "backup.sh" /tmp/current_cron; then
-    echo "0 2 * * 0 cd /home/ubuntu/ManagementApp/aws-deployment && bash backup.sh" >> /tmp/current_cron
+    echo "0 2 * * 0 cd /home/ubuntu/management-app/aws-deployment && bash backup.sh" >> /tmp/current_cron
     echo "✅ Added: Weekly backup on Sundays at 2:00 AM"
 fi
 

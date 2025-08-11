@@ -20,7 +20,7 @@ echo ""
 # Check directory
 if [ ! -f "setup-sqlite.sh" ]; then
     echo "❌ Please run from aws-deployment directory"
-    echo "   cd ManagementApp/aws-deployment"
+    echo "   cd management-app/aws-deployment"
     echo "   bash complete-sqlite-production.sh"
     exit 1
 fi
@@ -98,8 +98,8 @@ bash aggregate-logs.sh
 # Get system information
 EC2_PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "localhost")
 DATABASE_SIZE="Unknown"
-if [ -f "/home/ubuntu/ManagementApp/data/database/management.db" ]; then
-    DATABASE_SIZE=$(du -h /home/ubuntu/ManagementApp/data/database/management.db | cut -f1)
+if [ -f "/home/ubuntu/management-app/data/database/management.db" ]; then
+    DATABASE_SIZE=$(du -h /home/ubuntu/management-app/data/database/management.db | cut -f1)
 fi
 
 echo ""
@@ -117,7 +117,7 @@ echo "  📊 Status: $(curl -s http://localhost/health 2>/dev/null && echo "✅ 
 echo ""
 echo "🗄️ Database Information:"
 echo "========================"
-echo "  📁 Location: /home/ubuntu/ManagementApp/data/database/management.db"
+echo "  📁 Location: /home/ubuntu/management-app/data/database/management.db"
 echo "  📏 Size: $DATABASE_SIZE"
 echo "  ⚙️ Mode: WAL (Write-Ahead Logging)"
 echo "  🔧 Cache: 10,000 pages (40MB)"
@@ -128,7 +128,7 @@ echo "  ✍️ Writers: 1 (single writer)"
 echo ""
 echo "💾 Backup System:"
 echo "================="
-echo "  📂 Local backups: /home/ubuntu/ManagementApp/data/backups/"
+echo "  📂 Local backups: /home/ubuntu/management-app/data/backups/"
 echo "  🔄 Schedule: Weekly (Sundays 2 AM)"
 echo "  📦 Compression: gzip"
 echo "  🗓️ Retention: 14 days"
@@ -138,10 +138,10 @@ echo "  ✅ Verification: Integrity checks included"
 echo ""
 echo "📊 Logging System:"
 echo "=================="
-echo "  📱 Application: /home/ubuntu/ManagementApp/data/logs/application/"
-echo "  🗄️ Database: /home/ubuntu/ManagementApp/data/logs/database/"
-echo "  📈 Performance: /home/ubuntu/ManagementApp/data/logs/performance/"
-echo "  🔒 Security: /home/ubuntu/ManagementApp/data/logs/security/"
+echo "  📱 Application: /home/ubuntu/management-app/data/logs/application/"
+echo "  🗄️ Database: /home/ubuntu/management-app/data/logs/database/"
+echo "  📈 Performance: /home/ubuntu/management-app/data/logs/performance/"
+echo "  🔒 Security: /home/ubuntu/management-app/data/logs/security/"
 echo "  📊 Daily summaries: Generated at 11:59 PM"
 echo "  🔄 Rotation: Automated cleanup"
 
@@ -208,7 +208,7 @@ echo ""
 echo "📋 Daily Operations:"
 echo "=================="
 echo "  🌅 Morning: Check daily summary"
-echo "    cat /home/ubuntu/ManagementApp/data/logs/daily-summary-\$(date +%Y%m%d).log"
+echo "    cat /home/ubuntu/management-app/data/logs/daily-summary-\$(date +%Y%m%d).log"
 echo ""
 echo "  📊 Monitor performance:"
 echo "    bash monitor-sqlite.sh"
@@ -217,7 +217,7 @@ echo "  🔍 Check for issues:"
 echo "    bash health-check-sqlite.sh"
 echo ""
 echo "  📱 View live logs:"
-echo "    tail -f /home/ubuntu/ManagementApp/data/logs/application/*.log"
+echo "    tail -f /home/ubuntu/management-app/data/logs/application/*.log"
 
 echo ""
 echo "📚 Documentation:"

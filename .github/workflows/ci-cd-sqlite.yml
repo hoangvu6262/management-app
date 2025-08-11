@@ -72,24 +72,24 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             echo "📋 Starting SQLite production deployment..."
-            cd /home/ubuntu/ManagementApp
-            
+            cd /home/ubuntu/management-app
+
             echo "🔄 Pulling latest code..."
             git pull origin main
-            
+
             echo "💾 Creating pre-deployment backup..."
             cd aws-deployment
             bash enhanced-backup.sh || echo "⚠️ Backup failed, continuing deployment"
-            
+
             echo "🗄️ Setting up SQLite production environment..."
             bash setup-sqlite.sh
-            
+
             echo "🚀 Deploying with SQLite production configuration..."
             bash deploy.sh
-            
+
             echo "⏳ Waiting for services to stabilize..."
             sleep 30
-            
+
             echo "🏥 Running health checks..."
             if bash health-check-sqlite.sh; then
               echo "✅ Health check passed!"
@@ -97,10 +97,10 @@ jobs:
               echo "❌ Health check failed!"
               exit 1
             fi
-            
+
             echo "📊 Running performance verification..."
             bash monitor-sqlite.sh
-            
+
             echo "🎉 SQLite production deployment completed successfully!"
             echo "🌐 Application URL: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
 
@@ -112,7 +112,7 @@ jobs:
           echo "✅ Backup: Pre-deployment backup created"
           echo "✅ Health: All checks passed"
           echo "✅ Monitoring: Performance verified"
-          
+
       - name: 🚨 Deployment Failed
         if: failure()
         run: |

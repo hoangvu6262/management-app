@@ -52,7 +52,7 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           echo "🔄 Starting SQLite rollback procedure..."
-          cd /home/ubuntu/ManagementApp
+          cd /home/ubuntu/management-app
           
           # Pre-rollback backup
           echo "💾 Creating pre-rollback backup..."
@@ -75,7 +75,7 @@ jobs:
               bash restore-sqlite.sh ${{ github.event.inputs.backup_file }}
             else
               echo "📥 Restoring from latest backup..."
-              LATEST_BACKUP=$(ls -t /home/ubuntu/ManagementApp/data/backups/management_*.db.gz | head -1)
+              LATEST_BACKUP=$(ls -t /home/ubuntu/management-app/data/backups/management_*.db.gz | head -1)
               if [ -n "$LATEST_BACKUP" ]; then
                 BACKUP_NAME=$(basename "$LATEST_BACKUP")
                 bash restore-sqlite.sh "$BACKUP_NAME"
@@ -127,7 +127,7 @@ jobs:
               bash restore-sqlite.sh ${{ github.event.inputs.backup_file }}
             else
               echo "📝 Restoring database from latest backup..."
-              LATEST_BACKUP=$(ls -t /home/ubuntu/ManagementApp/data/backups/management_*.db.gz | head -1)
+              LATEST_BACKUP=$(ls -t /home/ubuntu/management-app/data/backups/management_*.db.gz | head -1)
               if [ -n "$LATEST_BACKUP" ]; then
                 BACKUP_NAME=$(basename "$LATEST_BACKUP")
                 bash restore-sqlite.sh "$BACKUP_NAME"
@@ -172,7 +172,7 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           echo "📊 Running extended post-rollback verification..."
-          cd /home/ubuntu/ManagementApp/aws-deployment
+          cd /home/ubuntu/management-app/aws-deployment
           
           # Wait a bit more
           sleep 30
@@ -184,7 +184,7 @@ jobs:
           bash log-performance.sh
           
           # Generate rollback report
-          cat > /home/ubuntu/ManagementApp/data/logs/rollback-report-$(date +%Y%m%d_%H%M%S).log << EOF
+          cat > /home/ubuntu/management-app/data/logs/rollback-report-$(date +%Y%m%d_%H%M%S).log << EOF
 SQLite Rollback Report
 ======================
 Date: $(date)
@@ -231,7 +231,7 @@ EOF
         echo ""
         echo "🛠️ Emergency recovery commands:"
         echo "  ssh into EC2 and run:"
-        echo "  cd ManagementApp/aws-deployment"
+        echo "  cd management-app/aws-deployment"
         echo "  bash health-check-sqlite.sh"
         echo "  bash monitor-sqlite.sh"
         echo "  docker-compose -f docker-compose.prod.yml logs"

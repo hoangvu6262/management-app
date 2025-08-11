@@ -4,10 +4,10 @@
 
 set -e
 
-BACKUP_DIR="/home/ubuntu/ManagementApp/data/backups"
-DB_FILE="/home/ubuntu/ManagementApp/data/database/management.db"
+BACKUP_DIR="/home/ubuntu/management-app/data/backups"
+DB_FILE="/home/ubuntu/management-app/data/database/management.db"
 DATE=$(date +%Y%m%d_%H%M%S)
-LOG_FILE="/home/ubuntu/ManagementApp/data/logs/backup.log"
+LOG_FILE="/home/ubuntu/management-app/data/logs/backup.log"
 
 # S3 settings (optional - configure if needed)
 S3_BUCKET="${BACKUP_S3_BUCKET:-}"
@@ -78,7 +78,7 @@ cat > "${COMPRESSED_FILE}.meta" << EOF
   "compression": "gzip",
   "integrity_check": "$INTEGRITY",
   "server_ip": "$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo 'unknown')",
-  "git_commit": "$(cd /home/ubuntu/ManagementApp && git rev-parse HEAD 2>/dev/null || echo 'unknown')"
+  "git_commit": "$(cd /home/ubuntu/management-app && git rev-parse HEAD 2>/dev/null || echo 'unknown')"
 }
 EOF
 
@@ -147,7 +147,7 @@ if [ -n "$NOTIFICATION_EMAIL" ]; then
     # Simple email notification (requires sendmail or similar)
     if command -v mail &> /dev/null; then
         echo "SQLite backup completed successfully on $(date)" | \
-        mail -s "Backup Success - ManagementApp" $NOTIFICATION_EMAIL
+        mail -s "Backup Success - management-app" $NOTIFICATION_EMAIL
     fi
 fi
 

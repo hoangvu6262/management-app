@@ -10,7 +10,7 @@ echo "==============================="
 # Check if we're in the right directory
 if [ ! -f "setup-sqlite.sh" ]; then
     echo "❌ Please run this script from the aws-deployment directory"
-    echo "   cd ManagementApp/aws-deployment"
+    echo "   cd management-app/aws-deployment"
     echo "   bash quick-setup-sqlite.sh"
     exit 1
 fi
@@ -35,7 +35,7 @@ echo "📋 Step 3: Setup Summary"
 echo "======================="
 
 # Check if database directory exists
-if [ -d "/home/ubuntu/ManagementApp/data/database" ]; then
+if [ -d "/home/ubuntu/management-app/data/database" ]; then
     echo "✅ Database directory created"
 else
     echo "⚠️  Database directory not found (will be created on first run)"

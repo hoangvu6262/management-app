@@ -34,7 +34,7 @@ fi
 echo ""
 echo "🗄️ Step 1: Setting up SQLite (if not already done)"
 echo "================================================="
-if [ ! -f "/home/ubuntu/ManagementApp/server-app/appsettings.Production.json" ]; then
+if [ ! -f "/home/ubuntu/management-app/server-app/appsettings.Production.json" ]; then
     echo "📋 SQLite not configured, setting up now..."
     bash setup-sqlite.sh
 else
@@ -53,7 +53,7 @@ chmod +x enhanced-backup.sh
 
 # Test backup
 echo "🧪 Testing backup system..."
-if [ -f "/home/ubuntu/ManagementApp/data/database/management.db" ]; then
+if [ -f "/home/ubuntu/management-app/data/database/management.db" ]; then
     echo "Database exists, testing backup..."
     bash enhanced-backup.sh
 else
@@ -107,25 +107,25 @@ echo "📅 Setting up comprehensive maintenance schedule..."
 # Create new cron configuration
 cat > /tmp/comprehensive_cron << EOF
 # Health check every 5 minutes
-*/5 * * * * cd /home/ubuntu/ManagementApp/aws-deployment && bash health-check-sqlite.sh >> /home/ubuntu/ManagementApp/data/logs/system/health.log 2>&1
+*/5 * * * * cd /home/ubuntu/management-app/aws-deployment && bash health-check-sqlite.sh >> /home/ubuntu/management-app/data/logs/system/health.log 2>&1
 
 # Performance logging every 10 minutes
-*/10 * * * * cd /home/ubuntu/ManagementApp/aws-deployment && bash log-performance.sh
+*/10 * * * * cd /home/ubuntu/management-app/aws-deployment && bash log-performance.sh
 
 # Security logging every 30 minutes
-*/30 * * * * cd /home/ubuntu/ManagementApp/aws-deployment && bash log-security.sh
+*/30 * * * * cd /home/ubuntu/management-app/aws-deployment && bash log-security.sh
 
 # Daily restart at 3 AM
-0 3 * * * cd /home/ubuntu/ManagementApp/aws-deployment && docker-compose -f docker-compose.prod.yml restart
+0 3 * * * cd /home/ubuntu/management-app/aws-deployment && docker-compose -f docker-compose.prod.yml restart
 
 # Daily log aggregation at 11:59 PM
-59 23 * * * cd /home/ubuntu/ManagementApp/aws-deployment && bash aggregate-logs.sh
+59 23 * * * cd /home/ubuntu/management-app/aws-deployment && bash aggregate-logs.sh
 
 # Weekly comprehensive maintenance on Sundays at 2 AM
-0 2 * * 0 cd /home/ubuntu/ManagementApp/aws-deployment && bash comprehensive-maintenance.sh
+0 2 * * 0 cd /home/ubuntu/management-app/aws-deployment && bash comprehensive-maintenance.sh
 
 # Weekly log rotation on Sundays at 5 AM
-0 5 * * 0 cd /home/ubuntu/ManagementApp/aws-deployment && bash rotate-logs.sh
+0 5 * * 0 cd /home/ubuntu/management-app/aws-deployment && bash rotate-logs.sh
 EOF
 
 # Apply new crontab
@@ -178,7 +178,7 @@ echo "⏰ Automation: Full cron schedule"
 echo ""
 echo "📁 Directory Structure:"
 echo "======================"
-echo "ManagementApp/"
+echo "management-app/"
 echo "├── data/"
 echo "│   ├── database/          # SQLite database"
 echo "│   ├── backups/           # Local backups"

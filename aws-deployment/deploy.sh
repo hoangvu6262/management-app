@@ -7,7 +7,7 @@ set -e
 echo "🚀 Starting deployment..."
 
 # Navigate to project directory
-cd /home/ubuntu/ManagementApp
+cd /home/ubuntu/management-app
 
 # Pull latest changes
 echo "📥 Pulling latest changes..."

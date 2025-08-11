@@ -29,7 +29,7 @@ echo ""
 
 # Docker containers
 echo "🐳 Docker Containers:"
-cd /home/ubuntu/ManagementApp/aws-deployment
+cd /home/ubuntu/management-app/aws-deployment
 if docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
     docker-compose -f docker-compose.prod.yml ps
 else

@@ -6,7 +6,7 @@ set -e
 
 echo "📊 Setting up Enhanced Logging for SQLite Production..."
 
-PROJECT_DIR="/home/ubuntu/ManagementApp"
+PROJECT_DIR="/home/ubuntu/management-app"
 LOG_DIR="$PROJECT_DIR/data/logs"
 
 # Create log directories
@@ -71,8 +71,8 @@ cat > $PROJECT_DIR/aws-deployment/log-database-queries.sh << 'EOF'
 #!/bin/bash
 # Database Query Logger
 
-DB_FILE="/home/ubuntu/ManagementApp/data/database/management.db"
-LOG_FILE="/home/ubuntu/ManagementApp/data/logs/database/queries-$(date +%Y%m%d).log"
+DB_FILE="/home/ubuntu/management-app/data/database/management.db"
+LOG_FILE="/home/ubuntu/management-app/data/logs/database/queries-$(date +%Y%m%d).log"
 
 if [ ! -f "$DB_FILE" ]; then
     echo "Database file not found: $DB_FILE"
@@ -95,8 +95,8 @@ cat > $PROJECT_DIR/aws-deployment/log-performance.sh << 'EOF'
 #!/bin/bash
 # Performance Logger
 
-LOG_FILE="/home/ubuntu/ManagementApp/data/logs/performance/perf-$(date +%Y%m%d).log"
-DB_FILE="/home/ubuntu/ManagementApp/data/database/management.db"
+LOG_FILE="/home/ubuntu/management-app/data/logs/performance/perf-$(date +%Y%m%d).log"
+DB_FILE="/home/ubuntu/management-app/data/database/management.db"
 
 echo "$(date): Performance monitoring started" >> $LOG_FILE
 
@@ -139,7 +139,7 @@ cat > $PROJECT_DIR/aws-deployment/log-security.sh << 'EOF'
 #!/bin/bash
 # Security Logger
 
-LOG_FILE="/home/ubuntu/ManagementApp/data/logs/security/security-$(date +%Y%m%d).log"
+LOG_FILE="/home/ubuntu/management-app/data/logs/security/security-$(date +%Y%m%d).log"
 
 echo "$(date): Security monitoring started" >> $LOG_FILE
 
@@ -157,7 +157,7 @@ df -h >> $LOG_FILE
 
 # Check for suspicious files
 echo "=== File System Security ===" >> $LOG_FILE
-find /home/ubuntu/ManagementApp -name "*.tmp" -o -name "*.bak" | head -5 >> $LOG_FILE
+find /home/ubuntu/management-app -name "*.tmp" -o -name "*.bak" | head -5 >> $LOG_FILE
 
 echo "$(date): Security monitoring completed" >> $LOG_FILE
 echo "---" >> $LOG_FILE
@@ -169,7 +169,7 @@ cat > $PROJECT_DIR/aws-deployment/aggregate-logs.sh << 'EOF'
 #!/bin/bash
 # Log Aggregator - combines all logs for analysis
 
-LOG_DIR="/home/ubuntu/ManagementApp/data/logs"
+LOG_DIR="/home/ubuntu/management-app/data/logs"
 OUTPUT_FILE="$LOG_DIR/daily-summary-$(date +%Y%m%d).log"
 
 echo "📊 Daily Log Summary - $(date)" > $OUTPUT_FILE
@@ -245,7 +245,7 @@ cat > $PROJECT_DIR/aws-deployment/rotate-logs.sh << 'EOF'
 #!/bin/bash
 # Log Rotation Script
 
-LOG_DIR="/home/ubuntu/ManagementApp/data/logs"
+LOG_DIR="/home/ubuntu/management-app/data/logs"
 
 echo "🔄 Starting log rotation..."
 
@@ -285,16 +285,16 @@ chmod +x $PROJECT_DIR/aws-deployment/rotate-logs.sh
 echo "⏰ Setting up logging cron jobs..."
 cat > /tmp/logging_cron << EOF
 # Performance logging every 10 minutes
-*/10 * * * * cd /home/ubuntu/ManagementApp/aws-deployment && bash log-performance.sh
+*/10 * * * * cd /home/ubuntu/management-app/aws-deployment && bash log-performance.sh
 
 # Security logging every 30 minutes
-*/30 * * * * cd /home/ubuntu/ManagementApp/aws-deployment && bash log-security.sh
+*/30 * * * * cd /home/ubuntu/management-app/aws-deployment && bash log-security.sh
 
 # Daily log aggregation at 11:59 PM
-59 23 * * * cd /home/ubuntu/ManagementApp/aws-deployment && bash aggregate-logs.sh
+59 23 * * * cd /home/ubuntu/management-app/aws-deployment && bash aggregate-logs.sh
 
 # Weekly log rotation on Sundays at 5 AM
-0 5 * * 0 cd /home/ubuntu/ManagementApp/aws-deployment && bash rotate-logs.sh
+0 5 * * 0 cd /home/ubuntu/management-app/aws-deployment && bash rotate-logs.sh
 EOF
 
 # Add to existing crontab

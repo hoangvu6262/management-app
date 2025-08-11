@@ -4,7 +4,7 @@
 
 BACKUP_DATE=$1
 BACKUP_DIR="/home/ubuntu/backups"
-PROJECT_DIR="/home/ubuntu/ManagementApp"
+PROJECT_DIR="/home/ubuntu/management-app"
 
 if [ -z "$BACKUP_DATE" ]; then
     echo "❌ Error: Please provide a backup date"

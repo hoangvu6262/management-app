@@ -8,7 +8,7 @@ echo "💾 Starting backup process..."
 
 BACKUP_DIR="/home/ubuntu/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
-PROJECT_DIR="/home/ubuntu/ManagementApp"
+PROJECT_DIR="/home/ubuntu/management-app"
 
 # Create backup directory
 mkdir -p $BACKUP_DIR
@@ -50,7 +50,7 @@ tar -czf $BACKUP_DIR/app_$DATE.tar.gz \
     --exclude='.next' \
     --exclude='data' \
     -C /home/ubuntu \
-    ManagementApp
+    management-app
 
 echo "✅ Application backup created: app_$DATE.tar.gz"
 
@@ -70,8 +70,8 @@ Files included:
 
 Restore instructions:
 1. Stop containers: docker-compose -f docker-compose.prod.yml down
-2. Restore database: cp management_$DATE.db /home/ubuntu/ManagementApp/data/management.db
-3. Restore config: tar -xzf config_$DATE.tar.gz -C /home/ubuntu/ManagementApp/
+2. Restore database: cp management_$DATE.db /home/ubuntu/management-app/data/management.db
+3. Restore config: tar -xzf config_$DATE.tar.gz -C /home/ubuntu/management-app/
 4. Restore app: tar -xzf app_$DATE.tar.gz -C /home/ubuntu/
 5. Deploy: bash deploy.sh
 EOF
