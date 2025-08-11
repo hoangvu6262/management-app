@@ -55,10 +55,10 @@ done
 # Check configuration files
 echo ""
 echo "📄 Configuration files:"
-if [ -f "../server-app/appsettings.Production.json" ]; then
-    echo "   ✅ appsettings.Production.json (with optimized SQLite settings)"
+if [ -f "../server-app/appsettings.json" ]; then
+    echo "   ✅ appsettings.json (with optimized SQLite settings)"
 else
-    echo "   ❌ appsettings.Production.json (missing)"
+    echo "   ❌ appsettings.json (missing)"
 fi
 
 echo ""

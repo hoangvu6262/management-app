@@ -38,7 +38,7 @@ echo "⚙️ Creating optimized SQLite configuration..."
 JWT_SECRET=$(openssl rand -base64 32)
 
 # Update server appsettings for production SQLite
-cat > $PROJECT_DIR/server-app/appsettings.Production.json << EOF
+cat > $PROJECT_DIR/server-app/appsettings.json << EOF
 {
   "Logging": {
     "LogLevel": {

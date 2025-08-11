@@ -24,7 +24,7 @@ NEXT_PUBLIC_APP_VERSION=1.0.0
 EOF
 
 # Create production appsettings.json for server
-cat > server-app/appsettings.Production.json << EOF
+cat > server-app/appsettings.json << EOF
 {
   "Logging": {
     "LogLevel": {
@@ -55,6 +55,6 @@ EOF
 echo "Environment setup completed!"
 echo "Files created:"
 echo "- .env (for docker-compose)"
-echo "- server-app/appsettings.Production.json"
+echo "- server-app/appsettings.json"
 echo ""
 echo "You can now run: docker-compose up -d --build"

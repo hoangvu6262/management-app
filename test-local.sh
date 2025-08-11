@@ -22,7 +22,7 @@ EOF
 
 # Create local appsettings for server
 echo "⚙️ Setting up server configuration..."
-cat > server-app/appsettings.Production.json << EOF
+cat > server-app/appsettings.json << EOF
 {
   "Logging": {
     "LogLevel": {
