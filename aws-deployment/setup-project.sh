@@ -48,8 +48,8 @@ NEXT_PUBLIC_APP_VERSION=1.0.0
 EOF
 
 # Setup environment variables for server
-if [ ! -f "server-app/appsettings.Production.json" ]; then
-    cp server-app/appsettings.Production.template.json server-app/appsettings.Production.json
+if [ ! -f "server-app/appsettings.json" ]; then
+    cp server-app/appsettings.Production.template.json server-app/appsettings.json
 fi
 
 # Create production environment file for Docker Compose

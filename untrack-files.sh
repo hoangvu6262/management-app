@@ -20,7 +20,7 @@ git rm -r --cached client-app/node_modules/ 2>/dev/null || echo "client-app/node
 git rm -r --cached server-app/bin/ 2>/dev/null || echo "server-app/bin not tracked"
 git rm -r --cached server-app/obj/ 2>/dev/null || echo "server-app/obj not tracked"
 git rm --cached server-app/management.db 2>/dev/null || echo "management.db not tracked"
-git rm --cached server-app/appsettings.Production.json 2>/dev/null || echo "Production settings not tracked"
+git rm --cached server-app/appsettings.json 2>/dev/null || echo "Production settings not tracked"
 
 # Docker files that shouldn't be tracked
 git rm --cached docker-compose.override.yml 2>/dev/null || echo "docker-compose.override.yml not tracked"

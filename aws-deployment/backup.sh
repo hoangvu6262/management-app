@@ -35,7 +35,7 @@ echo "⚙️ Backing up configuration files..."
 tar -czf $BACKUP_DIR/config_$DATE.tar.gz \
     -C $PROJECT_DIR \
     client-app/.env.production \
-    server-app/appsettings.Production.json \
+    server-app/appsettings.json \
     aws-deployment/ \
     docker-compose.yml \
     nginx.conf 2>/dev/null || echo "⚠️  Some config files may not exist"
