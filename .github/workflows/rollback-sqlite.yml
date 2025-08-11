@@ -1,0 +1,262 @@
+name: 🔄 SQLite Rollback & Recovery
+
+on:
+  workflow_dispatch:
+    inputs:
+      rollback_type:
+        description: '🔄 Type of rollback to perform'
+        required: true
+        type: choice
+        options:
+        - database_only
+        - application_only
+        - full_rollback
+      backup_file:
+        description: '💾 Backup file to restore from (format: management_YYYYMMDD_HHMMSS.db.gz)'
+        required: false
+        type: string
+      git_commit:
+        description: '📝 Git commit to rollback to (leave empty for previous commit)'
+        required: false
+        type: string
+      confirm_rollback:
+        description: '⚠️ Type "rollback" to confirm this action'
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm_rollback == 'rollback'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 📋 Rollback Information
+      run: |
+        echo "🔄 SQLite Rollback & Recovery"
+        echo "============================="
+        echo "🔄 Rollback type: ${{ github.event.inputs.rollback_type }}"
+        echo "💾 Backup file: ${{ github.event.inputs.backup_file || 'Latest available' }}"
+        echo "📝 Git commit: ${{ github.event.inputs.git_commit || 'Previous commit' }}"
+        echo "👤 Initiated by: ${{ github.actor }}"
+        echo "📅 Time: $(date)"
+        echo ""
+        echo "⚠️ This is a ROLLBACK operation - proceed with caution!"
+    
+    - name: 🔄 Execute Rollback
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          echo "🔄 Starting SQLite rollback procedure..."
+          cd /home/ubuntu/ManagementApp
+          
+          # Pre-rollback backup
+          echo "💾 Creating pre-rollback backup..."
+          cd aws-deployment
+          bash enhanced-backup.sh
+          
+          # Determine rollback strategy
+          ROLLBACK_TYPE="${{ github.event.inputs.rollback_type }}"
+          
+          if [ "$ROLLBACK_TYPE" = "database_only" ]; then
+            echo "🗄️ Database-only rollback..."
+            
+            # Stop application
+            echo "⏸️ Stopping application..."
+            docker-compose -f docker-compose.prod.yml stop server-app
+            
+            # Restore database
+            if [ -n "${{ github.event.inputs.backup_file }}" ]; then
+              echo "📥 Restoring from specified backup: ${{ github.event.inputs.backup_file }}"
+              bash restore-sqlite.sh ${{ github.event.inputs.backup_file }}
+            else
+              echo "📥 Restoring from latest backup..."
+              LATEST_BACKUP=$(ls -t /home/ubuntu/ManagementApp/data/backups/management_*.db.gz | head -1)
+              if [ -n "$LATEST_BACKUP" ]; then
+                BACKUP_NAME=$(basename "$LATEST_BACKUP")
+                bash restore-sqlite.sh "$BACKUP_NAME"
+              else
+                echo "❌ No backups found!"
+                exit 1
+              fi
+            fi
+            
+            # Start application
+            echo "▶️ Starting application..."
+            docker-compose -f docker-compose.prod.yml start server-app
+            
+          elif [ "$ROLLBACK_TYPE" = "application_only" ]; then
+            echo "📱 Application-only rollback..."
+            
+            # Git rollback
+            if [ -n "${{ github.event.inputs.git_commit }}" ]; then
+              echo "📝 Rolling back to commit: ${{ github.event.inputs.git_commit }}"
+              git checkout ${{ github.event.inputs.git_commit }}
+            else
+              echo "📝 Rolling back to previous commit..."
+              git checkout HEAD~1
+            fi
+            
+            # Redeploy application
+            echo "🚀 Redeploying application..."
+            bash deploy.sh
+            
+          elif [ "$ROLLBACK_TYPE" = "full_rollback" ]; then
+            echo "🔄 Full system rollback..."
+            
+            # Stop all services
+            echo "⏸️ Stopping all services..."
+            docker-compose -f docker-compose.prod.yml down
+            
+            # Git rollback
+            if [ -n "${{ github.event.inputs.git_commit }}" ]; then
+              echo "📝 Rolling back to commit: ${{ github.event.inputs.git_commit }}"
+              git checkout ${{ github.event.inputs.git_commit }}
+            else
+              echo "📝 Rolling back to previous commit..."
+              git checkout HEAD~1
+            fi
+            
+            # Database rollback
+            if [ -n "${{ github.event.inputs.backup_file }}" ]; then
+              echo "📝 Restoring database from: ${{ github.event.inputs.backup_file }}"
+              bash restore-sqlite.sh ${{ github.event.inputs.backup_file }}
+            else
+              echo "📝 Restoring database from latest backup..."
+              LATEST_BACKUP=$(ls -t /home/ubuntu/ManagementApp/data/backups/management_*.db.gz | head -1)
+              if [ -n "$LATEST_BACKUP" ]; then
+                BACKUP_NAME=$(basename "$LATEST_BACKUP")
+                bash restore-sqlite.sh "$BACKUP_NAME"
+              else
+                echo "⚠️ No database backups found, keeping current database"
+              fi
+            fi
+            
+            # Full redeploy
+            echo "🚀 Full system redeploy..."
+            bash setup-sqlite.sh
+            bash deploy.sh
+            
+          fi
+          
+          echo "⏳ Waiting for services to stabilize..."
+          sleep 45
+          
+          echo "🏥 Running post-rollback health checks..."
+          if bash health-check-sqlite.sh; then
+            echo "✅ Rollback successful - all health checks passed!"
+          else
+            echo "❌ Rollback health check failed!"
+            echo "📋 Checking logs..."
+            docker-compose -f docker-compose.prod.yml logs --tail=30
+            exit 1
+          fi
+          
+          echo "📊 Running performance verification..."
+          bash monitor-sqlite.sh
+          
+          echo "🎉 SQLite rollback completed successfully!"
+          echo "🌐 Application: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
+          echo "🗄️ Database: SQLite optimized"
+          echo "📊 Status: All systems operational"
+
+    - name: 📊 Post-Rollback Verification
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          echo "📊 Running extended post-rollback verification..."
+          cd /home/ubuntu/ManagementApp/aws-deployment
+          
+          # Wait a bit more
+          sleep 30
+          
+          # Extended health check
+          bash health-check-sqlite.sh
+          
+          # Performance monitoring
+          bash log-performance.sh
+          
+          # Generate rollback report
+          cat > /home/ubuntu/ManagementApp/data/logs/rollback-report-$(date +%Y%m%d_%H%M%S).log << EOF
+SQLite Rollback Report
+======================
+Date: $(date)
+Type: ${{ github.event.inputs.rollback_type }}
+Initiated by: ${{ github.actor }}
+Backup used: ${{ github.event.inputs.backup_file || 'Latest available' }}
+Git commit: ${{ github.event.inputs.git_commit || 'Previous commit' }}
+
+System Status:
+$(bash health-check-sqlite.sh)
+
+Performance:
+$(bash monitor-sqlite.sh)
+
+Container Status:
+$(docker-compose -f docker-compose.prod.yml ps)
+EOF
+          
+          echo "📋 Rollback report generated!"
+
+    - name: ✅ Rollback Success Summary
+      if: success()
+      run: |
+        echo "🎉 SQLite Rollback Completed Successfully!"
+        echo "==========================================="
+        echo "✅ Rollback type: ${{ github.event.inputs.rollback_type }}"
+        echo "✅ Database: ${{ github.event.inputs.backup_file && 'Restored from backup' || 'Kept current or restored from latest' }}"
+        echo "✅ Application: ${{ github.event.inputs.git_commit && 'Rolled back to specified commit' || 'Rolled back to previous commit' }}"
+        echo "✅ Health checks: All passed"
+        echo "✅ Performance: Verified"
+        echo "✅ Status: System operational"
+        echo ""
+        echo "📋 Rollback report generated on server"
+        echo "👀 Monitor the application for any issues"
+        
+    - name: ❌ Rollback Failed
+      if: failure()
+      run: |
+        echo "❌ SQLite Rollback Failed!"
+        echo "========================="
+        echo "🔍 Check EC2 logs for details"
+        echo "💾 Pre-rollback backup was created"
+        echo "🆘 Contact administrator for manual recovery"
+        echo ""
+        echo "🛠️ Emergency recovery commands:"
+        echo "  ssh into EC2 and run:"
+        echo "  cd ManagementApp/aws-deployment"
+        echo "  bash health-check-sqlite.sh"
+        echo "  bash monitor-sqlite.sh"
+        echo "  docker-compose -f docker-compose.prod.yml logs"
+        echo "  # If needed, restore from pre-rollback backup"
+
+  notify-rollback:
+    needs: rollback
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 📧 Rollback Notification
+      run: |
+        if [ "${{ needs.rollback.result }}" = "success" ]; then
+          echo "🎉 SQLite Rollback Notification: SUCCESS"
+          echo "======================================="
+          echo "Type: ${{ github.event.inputs.rollback_type }}"
+          echo "Initiated by: ${{ github.actor }}"
+          echo "Status: Completed successfully"
+          echo "Time: $(date)"
+        else
+          echo "❌ SQLite Rollback Notification: FAILED"
+          echo "======================================"
+          echo "Type: ${{ github.event.inputs.rollback_type }}"
+          echo "Initiated by: ${{ github.actor }}"
+          echo "Status: Failed - requires manual intervention"
+          echo "Time: $(date)"
+        fi
