@@ -25,7 +25,7 @@ chmod -R 755 $LOG_DIR
 echo "⚙️ Updating application logging configuration..."
 JWT_SECRET=$(openssl rand -base64 32)
 
-cat > $PROJECT_DIR/server-app/appsettings.Production.json << EOF
+cat > $PROJECT_DIR/server-app/appsettings.json << EOF
 {
   "Logging": {
     "LogLevel": {
