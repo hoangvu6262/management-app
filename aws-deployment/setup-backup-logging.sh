@@ -34,11 +34,7 @@ fi
 echo ""
 echo "🗄️ Step 1: Setting up SQLite (if not already done)"
 echo "================================================="
-<<<<<<< HEAD
 if [ ! -f "/home/ubuntu/management-app/server-app/appsettings.Production.json" ]; then
-=======
-if [ ! -f "/home/ubuntu/ManagementApp/server-app/appsettings.json" ]; then
->>>>>>> refs/remotes/origin/main
     echo "📋 SQLite not configured, setting up now..."
     bash setup-sqlite.sh
 else
