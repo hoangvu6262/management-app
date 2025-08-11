@@ -11,18 +11,18 @@ cd /home/ubuntu
 
 # Clone repository (replace with your actual repository URL)
 echo "📥 Cloning repository..."
-if [ ! -d "ManagementApp" ]; then
+if [ ! -d "management-app" ]; then
     # Replace this URL with your actual repository
     git clone git@github.com:hoangvu6262/management-app.git
     echo "⚠️  Please update the git clone URL in this script with your actual repository"
 else
     echo "📁 Repository already exists, pulling latest changes..."
-    cd ManagementApp
+    cd management-app
     git pull origin main
     cd ..
 fi
 
-cd ManagementApp
+cd management-app
 
 # Create data directory for database
 echo "📊 Creating data directory..."
