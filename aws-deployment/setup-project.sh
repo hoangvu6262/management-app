@@ -13,7 +13,7 @@ cd /home/ubuntu
 echo "📥 Cloning repository..."
 if [ ! -d "ManagementApp" ]; then
     # Replace this URL with your actual repository
-    git clone https://github.com/yourusername/ManagementApp.git
+    git clone git@github.com:hoangvu6262/management-app.git
     echo "⚠️  Please update the git clone URL in this script with your actual repository"
 else
     echo "📁 Repository already exists, pulling latest changes..."
