@@ -7,13 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Search,
-  Filter,
-  CalendarDays,
-  Trophy,
-  Loader2,
-} from "lucide-react";
+import { Search, Filter, CalendarDays, Trophy, Loader2 } from "lucide-react";
 import { FootballMatchFilter } from "@/services/footballMatchService";
 import { useDebounceSearch } from "@/hooks/useDebounce";
 
@@ -38,7 +32,8 @@ export function Filters({ filter, onFilterChange }: FiltersProps) {
   );
 
   // Check if search is pending (user is typing but debounce hasn't triggered yet)
-  const isSearchPending = searchTerm !== debouncedSearchTerm && searchTerm.length > 0;
+  const isSearchPending =
+    searchTerm !== debouncedSearchTerm && searchTerm.length > 0;
   return (
     <div className="px-6 pb-4 space-y-4">
       {/* Mobile/Tablet Filters */}
@@ -51,7 +46,7 @@ export function Filters({ filter, onFilterChange }: FiltersProps) {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           )}
           <Input
-            placeholder="Search stadium or team... (searches as you type)"
+            placeholder="Search stadium or team..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -137,7 +132,7 @@ export function Filters({ filter, onFilterChange }: FiltersProps) {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           )}
           <Input
-            placeholder="Search stadium or team... (searches as you type)"
+            placeholder="Search stadium or team..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"

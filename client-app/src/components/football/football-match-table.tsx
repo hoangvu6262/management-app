@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -39,17 +39,23 @@ export function FootballMatchTable() {
     sortBy: "date",
     sortOrder: "desc",
   });
-
   // Fetch data using SWR
   const { data, error, isLoading, mutateAll } = useFootballMatches(filter);
 
-  const handleFilterChange = (key: keyof FootballMatchFilter, value: any) => {
-    setFilter((prev) => ({
-      ...prev,
-      [key]: value,
-      page: key !== "page" ? 1 : value,
-    }));
-  };
+  const handleFilterChange = useCallback(
+    (key: keyof FootballMatchFilter, value: any) => {
+      setFilter((prev) => {
+        const newFilter = {
+          ...prev,
+          [key]: value,
+          // Reset page to 1 when changing filters (except when changing page itself)
+          page: key !== "page" ? 1 : value,
+        };
+        return newFilter;
+      });
+    },
+    []
+  );
 
   const handleAddMatch = async (newMatchData: any) => {
     try {
@@ -116,7 +122,7 @@ export function FootballMatchTable() {
     }
   };
 
-  const getStatusBadge = (status: string, matchId: string) => {
+  const getStatusBadge = useCallback((status: string, matchId: string) => {
     const colorClass = footballMatchService.getStatusColor(status);
     return (
       <Select
@@ -135,7 +141,7 @@ export function FootballMatchTable() {
         </SelectContent>
       </Select>
     );
-  };
+  }, []);
 
   if (error) {
     return (
@@ -143,6 +149,7 @@ export function FootballMatchTable() {
         <CardContent className="flex items-center justify-center h-64">
           <div className="text-center">
             <p className="text-red-500 mb-2">Error loading football matches</p>
+            <p className="text-sm text-gray-500 mb-4">{error.message}</p>
             <Button onClick={() => mutateAll()} variant="outline">
               Try Again
             </Button>
@@ -214,43 +221,54 @@ export function FootballMatchTable() {
             </div>
           </div>
 
-          <CardContent>
+          <CardContent className="p-0">
             {isLoading ? (
-              <div className="flex items-center justify-center h-64">
+              <div className="flex items-center justify-center h-64 p-6">
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : (
               <>
                 {/* Mobile View */}
-                <MobileView
-                  matches={data?.items || []}
-                  onEdit={setEditingMatch}
-                  onDelete={handleDeleteMatch}
-                  getStatusBadge={getStatusBadge}
-                />
+                <div className="p-6 lg:hidden">
+                  <MobileView
+                    matches={data?.items || []}
+                    onEdit={setEditingMatch}
+                    onDelete={handleDeleteMatch}
+                    getStatusBadge={getStatusBadge}
+                  />
+                </div>
 
                 {/* Tablet View */}
-                <TabletView
-                  matches={data?.items || []}
-                  onEdit={setEditingMatch}
-                  onDelete={handleDeleteMatch}
-                  getStatusBadge={getStatusBadge}
-                />
+                <div className="p-6 hidden md:block lg:hidden">
+                  <TabletView
+                    matches={data?.items || []}
+                    onEdit={setEditingMatch}
+                    onDelete={handleDeleteMatch}
+                    getStatusBadge={getStatusBadge}
+                  />
+                </div>
 
                 {/* Desktop View */}
-                <DesktopView
-                  matches={data?.items || []}
-                  selectedRows={selectedRows}
-                  onEdit={setEditingMatch}
-                  onDelete={handleDeleteMatch}
-                  onRowSelect={handleRowSelect}
-                  onSelectAll={handleSelectAll}
-                  getStatusBadge={getStatusBadge}
-                />
+                <div className="p-6">
+                  <DesktopView
+                    matches={data?.items || []}
+                    selectedRows={selectedRows}
+                    onEdit={setEditingMatch}
+                    onDelete={handleDeleteMatch}
+                    onRowSelect={handleRowSelect}
+                    onSelectAll={handleSelectAll}
+                    getStatusBadge={getStatusBadge}
+                  />
+                </div>
 
                 {/* Pagination */}
-                {data && (
-                  <Pagination data={data} onFilterChange={handleFilterChange} />
+                {data && data.totalPages > 1 && (
+                  <div className="p-6 pt-0">
+                    <Pagination
+                      data={data}
+                      onFilterChange={handleFilterChange}
+                    />
+                  </div>
                 )}
               </>
             )}

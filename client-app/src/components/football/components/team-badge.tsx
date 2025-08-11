@@ -1,15 +1,29 @@
 import React from "react";
-import { Users } from "lucide-react";
+import { Users, Shield, Star, Trophy } from "lucide-react";
 
 interface TeamBadgeProps {
   team: string;
 }
 
 export function TeamBadge({ team }: TeamBadgeProps) {
+  const getTeamStyle = (team: string) => {
+    return {
+      bg: "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 hover:from-blue-500/20 hover:to-indigo-500/20",
+      text: "text-blue-700 dark:text-blue-300",
+      border: "border-blue-200/50 dark:border-blue-700/50",
+      icon: Shield,
+    };
+  };
+
+  const style = getTeamStyle(team);
+  const IconComponent = style.icon;
+
   return (
-    <div className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-md whitespace-nowrap w-max dark:bg-green-900/20 dark:text-green-300 dark:border-green-700">
-      <Users className="w-3 h-3 mr-1.5 flex-shrink-0" />
-      <span className="leading-tight">{team}</span>
+    <div
+      className={`group cursor-default inline-flex items-center px-3 py-1.5 text-xs font-semibold border rounded-xl whitespace-nowrap transition-all duration-300 hover:scale-105 hover:shadow-lg ${style.bg} ${style.text} ${style.border}`}
+    >
+      <IconComponent className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
+      <span className="font-bold tracking-wide">{team}</span>
     </div>
   );
 }

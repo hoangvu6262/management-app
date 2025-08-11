@@ -1,14 +1,10 @@
 import { cn } from "@/lib/utils";
 import {
-  Home,
   BarChart3,
   Calendar,
-  FileText,
   Settings,
-  Users,
   MessageSquare,
   Bell,
-  CreditCard,
   Trophy,
   X,
   LayoutDashboard,
@@ -26,43 +22,43 @@ const navigation = [
   },
   {
     name: "Football Matches",
-    href: "/football-matches",
+    href: "/football-matches/",
     icon: Trophy,
   },
   {
     name: "Analytics",
-    href: "/analytics",
+    href: "/analytics/",
     icon: BarChart3,
   },
   {
     name: "Projects",
-    href: "/projects",
+    href: "/projects/",
     icon: Receipt,
   },
   {
     name: "Schedule",
-    href: "/schedule",
+    href: "/schedule/",
     icon: CalendarDays,
   },
   {
     name: "Calendar",
-    href: "/calendar",
+    href: "/calendar/",
     icon: Calendar,
   },
   {
     name: "Messages",
-    href: "/messages",
+    href: "/messages/",
     icon: MessageSquare,
     badge: 49,
   },
   {
     name: "Notification",
-    href: "/notifications",
+    href: "/notifications/",
     icon: Bell,
   },
   {
     name: "Settings",
-    href: "/settings",
+    href: "/settings/",
     icon: Settings,
   },
 ];

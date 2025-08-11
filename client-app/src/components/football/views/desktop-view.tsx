@@ -1,25 +1,30 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Calendar, Clock, MapPin, Edit, Trash2 } from "lucide-react";
+  Calendar,
+  Clock,
+  MapPin,
+  Edit,
+  Trash2,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  Shield,
+  Star,
+  Trophy,
+} from "lucide-react";
 import {
   footballMatchService,
   FootballMatchResponse,
 } from "@/services/footballMatchService";
-import { TypeBadge } from "../components/type-badge";
-import { TeamBadge } from "../components/team-badge";
+import {
+  DataTable,
+  Column,
+  AvatarCell,
+  BadgeCell,
+  ActionsCell,
+} from "@/components/ui/data-table";
 
 interface DesktopViewProps {
   matches: FootballMatchResponse[];
@@ -31,20 +36,115 @@ interface DesktopViewProps {
   getStatusBadge: (status: string, matchId: string) => React.ReactNode;
 }
 
-const StadiumBadge = ({ stadium }: { stadium: string }) => (
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <div className="min-w-[140px] max-w-[200px]">
-        <div className="w-full inline-flex items-center px-3 py-1.5 text-xs font-medium bg-purple-900/20 text-purple-700 border border-purple-200 rounded-full hover:bg-purple-100 transition-colors cursor-pointer dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-700 dark:hover:bg-purple-900/30">
-          <MapPin className="h-3 w-3 mr-1.5 flex-shrink-0" />
-          <span className="truncate">{stadium}</span>
-        </div>
-      </div>
-    </TooltipTrigger>
-    <TooltipContent>
-      <p>{stadium}</p>
-    </TooltipContent>
-  </Tooltip>
+// Custom components for specific cells
+const DateCell = ({ date }: { date: string }) => (
+  <div className="flex items-center space-x-2">
+    <Calendar className="h-4 w-4 text-blue-500" />
+    <span className="text-sm font-medium">
+      {new Date(date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "2-digit",
+      })}
+    </span>
+  </div>
+);
+
+const TimeCell = ({ time }: { time: string }) => (
+  <div className="flex items-center space-x-2">
+    <Clock className="h-4 w-4 text-gray-500" />
+    <span className="text-sm">{time}</span>
+  </div>
+);
+
+const StadiumCell = ({ stadium }: { stadium: string }) => (
+  <div className="flex items-center space-x-2">
+    <MapPin className="h-4 w-4 text-purple-500" />
+    <span className="text-sm font-medium truncate max-w-[120px]">
+      {stadium}
+    </span>
+  </div>
+);
+
+const TeamCell = ({ team }: { team: string }) => {
+  return (
+    <div className="flex items-center space-x-2">
+      <Shield className={`h-4 w-4 text-blue-600`} />
+      <span className="text-sm font-medium">{team}</span>
+    </div>
+  );
+};
+
+const MatchNumberCell = ({ number }: { number: number }) => (
+  <div className="flex justify-center">
+    <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-500 text-white text-xs font-bold rounded-full">
+      {number}
+    </span>
+  </div>
+);
+
+const TypeCell = ({ type }: { type: string }) => {
+  return <BadgeCell text={type} variant="default" />;
+};
+
+const CurrencyCell = ({
+  amount,
+  type,
+}: {
+  amount: number;
+  type: "revenue" | "cost" | "neutral";
+}) => {
+  const getColorClass = () => {
+    switch (type) {
+      case "revenue":
+        return "text-emerald-600 dark:text-emerald-400";
+      case "cost":
+        return "text-red-500 dark:text-red-400";
+      default:
+        return "text-gray-700 dark:text-gray-300";
+    }
+  };
+
+  return (
+    <span className={`text-sm font-semibold ${getColorClass()}`}>
+      {footballMatchService.formatCurrency(amount)}
+    </span>
+  );
+};
+
+const ProfitCell = ({ profit }: { profit: number }) => {
+  const isPositive = profit > 0;
+  const isNegative = profit < 0;
+
+  return (
+    <div className="flex items-center justify-end space-x-1">
+      {isPositive && <TrendingUp className="h-3 w-3 text-green-500" />}
+      {isNegative && <TrendingDown className="h-3 w-3 text-red-500" />}
+      <span
+        className={`font-bold text-sm ${footballMatchService.getProfitColor(
+          profit
+        )}`}
+      >
+        {footballMatchService.formatCurrency(profit)}
+      </span>
+    </div>
+  );
+};
+
+const CheckboxCell = ({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: () => void;
+}) => (
+  <input
+    type="checkbox"
+    checked={checked}
+    onChange={onChange}
+    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+    onClick={(e) => e.stopPropagation()}
+  />
 );
 
 export function DesktopView({
@@ -56,180 +156,152 @@ export function DesktopView({
   onSelectAll,
   getStatusBadge,
 }: DesktopViewProps) {
+  const [sortKey, setSortKey] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const handleSort = (key: string, direction: "asc" | "desc") => {
+    setSortKey(key);
+    setSortDirection(direction);
+    // TODO: Implement actual sorting logic here
+  };
+
+  const columns: Column<FootballMatchResponse>[] = [
+    {
+      key: "date",
+      label: "Date",
+      width: "140px",
+      // sortable: true,
+      render: (value) => <DateCell date={value} />,
+    },
+    {
+      key: "time",
+      label: "Time",
+      width: "100px",
+      render: (value) => <TimeCell time={value} />,
+    },
+    {
+      key: "stadium",
+      label: "Stadium",
+      width: "180px",
+      render: (value) => <StadiumCell stadium={value} />,
+    },
+    {
+      key: "team",
+      label: "Team",
+      width: "140px",
+      render: (value) => <TeamCell team={value} />,
+    },
+    {
+      key: "matchNumber",
+      label: "Matches",
+      width: "80px",
+      render: (value) => <MatchNumberCell number={value} />,
+    },
+    {
+      key: "type",
+      label: "Type",
+      width: "100px",
+      render: (value) => <TypeCell type={value} />,
+    },
+    {
+      key: "totalRevenue",
+      label: "Revenue",
+      width: "120px",
+      // sortable: true,
+      render: (value) => <CurrencyCell amount={value} type="revenue" />,
+    },
+    {
+      key: "totalCost",
+      label: "Cost",
+      width: "120px",
+      // sortable: true,
+      render: (value) => <CurrencyCell amount={value} type="cost" />,
+    },
+    {
+      key: "recordingMoneyForPhotographer",
+      label: "Photographer",
+      width: "120px",
+      render: (value) => <CurrencyCell amount={value} type="neutral" />,
+    },
+    {
+      key: "moneyForCameraman",
+      label: "Cameraman",
+      width: "120px",
+      render: (value) => <CurrencyCell amount={value} type="neutral" />,
+    },
+    {
+      key: "discount",
+      label: "Discount",
+      width: "100px",
+      render: (value) => <CurrencyCell amount={value} type="neutral" />,
+    },
+    {
+      key: "profit",
+      label: "Profit",
+      width: "150px",
+      // sortable: true,
+      render: (value) => <ProfitCell profit={value || 0} />,
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: "140px",
+      render: (_, row) => getStatusBadge(row.status, row.id),
+    },
+    {
+      key: "note",
+      label: "Notes",
+      width: "120px",
+      render: (value) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400 italic truncate">
+          {value || "—"}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div className="hidden lg:block">
-      <div className="border rounded-lg bg-background overflow-hidden">
-        <div className="overflow-auto max-h-[calc(100vh-400px)] hide-scrollbar">
-          <Table>
-            <TableHeader className="sticky top-0 z-30 bg-white dark:bg-gray-900 shadow-sm border-b">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-12 bg-white dark:bg-gray-900">
-                  <input
-                    type="checkbox"
-                    onChange={onSelectAll}
-                    className="rounded"
-                  />
-                </TableHead>
-                <TableHead className="min-w-[120px] bg-white dark:bg-gray-900">
-                  Date
-                </TableHead>
-                <TableHead className="min-w-[80px] bg-white dark:bg-gray-900">
-                  Time
-                </TableHead>
-                <TableHead className="min-w-[160px] bg-white dark:bg-gray-900">
-                  Stadium
-                </TableHead>
-                <TableHead className="min-w-[120px] bg-white dark:bg-gray-900">
-                  Team
-                </TableHead>
-                <TableHead className="min-w-[80px] bg-white dark:bg-gray-900">
-                  Matches
-                </TableHead>
-                <TableHead className="min-w-[80px] bg-white dark:bg-gray-900">
-                  Type
-                </TableHead>
-                <TableHead className="min-w-[100px] text-right bg-white dark:bg-gray-900">
-                  Revenue
-                </TableHead>
-                <TableHead className="min-w-[100px] text-right bg-white dark:bg-gray-900">
-                  Cost
-                </TableHead>
-                <TableHead className="min-w-[100px] text-right bg-white dark:bg-gray-900">
-                  Photographer
-                </TableHead>
-                <TableHead className="min-w-[100px] text-right bg-white dark:bg-gray-900">
-                  Cameraman
-                </TableHead>
-                <TableHead className="min-w-[100px] text-center bg-white dark:bg-gray-900">
-                  Discount
-                </TableHead>
-                <TableHead className="min-w-[100px] text-right bg-white dark:bg-gray-900">
-                  Profit
-                </TableHead>
-                <TableHead className="min-w-[120px] bg-white dark:bg-gray-900">
-                  Status
-                </TableHead>
-                <TableHead className="min-w-[100px] bg-white dark:bg-gray-900">
-                  Notes
-                </TableHead>
-                <TableHead className="w-16 bg-white dark:bg-gray-900"></TableHead>
-                <TableHead className="w-16 bg-white dark:bg-gray-900"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {matches.map((match) => {
-                const isSelected = selectedRows.includes(match.id);
-
-                return (
-                  <TableRow
-                    key={match.id}
-                    className={isSelected ? "bg-blue-50 dark:bg-blue-950" : ""}
-                  >
-                    <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => onRowSelect(match.id)}
-                        className="rounded"
-                      />
-                    </TableCell>
-
-                    <TableCell className="font-medium">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-blue-500" />
-                        <span className="whitespace-nowrap">
-                          {new Date(match.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4 text-gray-500" />
-                        <span className="whitespace-nowrap">{match.time}</span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <StadiumBadge stadium={match.stadium} />
-                    </TableCell>
-
-                    <TableCell>
-                      <TeamBadge team={match.team} />
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      {match.matchNumber}
-                    </TableCell>
-
-                    <TableCell>
-                      <TypeBadge type={match.type} />
-                    </TableCell>
-
-                    <TableCell className="font-medium text-right text-green-600 whitespace-nowrap">
-                      {footballMatchService.formatCurrency(match.totalRevenue)}
-                    </TableCell>
-                    <TableCell className="text-right text-red-600 whitespace-nowrap">
-                      {footballMatchService.formatCurrency(match.totalCost)}
-                    </TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      {footballMatchService.formatCurrency(
-                        match.recordingMoneyForPhotographer
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      {footballMatchService.formatCurrency(
-                        match.moneyForCameraman
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center whitespace-nowrap">
-                      {footballMatchService.formatCurrency(match.discount)}
-                    </TableCell>
-
-                    <TableCell
-                      className={`font-medium text-right whitespace-nowrap ${footballMatchService.getProfitColor(
-                        match.profit || 0
-                      )}`}
-                    >
-                      {footballMatchService.formatCurrency(match.profit || 0)}
-                    </TableCell>
-
-                    <TableCell>
-                      {getStatusBadge(match.status, match.id)}
-                    </TableCell>
-                    <TableCell className="max-w-[100px]">
-                      <span className="truncate block">
-                        {match.note || "-"}
-                      </span>
-                    </TableCell>
-
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-yellow-100 dark:hover:bg-yellow-900/20"
-                        onClick={() => onEdit(match)}
-                      >
-                        <Edit className="h-4 w-4 text-yellow-600" />
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-red-100 dark:hover:bg-red-900/20"
-                        onClick={() => onDelete(match.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={matches}
+        onSort={handleSort}
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        height="calc(100vh - 470px)"
+        onRowClick={(row) => {
+          // Optional: Handle row click
+          console.log("Row clicked:", row);
+        }}
+        actions={(row) => (
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(row);
+              }}
+            >
+              <Edit className="h-4 w-4 text-amber-600" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/30"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(row.id);
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          </div>
+        )}
+        emptyMessage="No football matches found"
+        className="shadow-lg"
+      />
     </div>
   );
 }

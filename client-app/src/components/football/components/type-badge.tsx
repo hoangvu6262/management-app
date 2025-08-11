@@ -5,10 +5,23 @@ interface TypeBadgeProps {
 }
 
 export function TypeBadge({ type }: TypeBadgeProps) {
+  const getTypeStyle = (type: string) => {
+    return {
+      bg: "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 hover:from-blue-500/20 hover:to-cyan-500/20",
+      text: "text-blue-700 dark:text-blue-300",
+      border: "border-blue-200/50 dark:border-blue-700/50",
+      icon: "⚽",
+    };
+  };
+
+  const style = getTypeStyle(type);
+
   return (
-    <div className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-md whitespace-nowrap w-max dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700">
-      <span className="w-3 h-3 mr-1.5 flex items-center justify-center flex-shrink-0 text-[10px] leading-none">⚽</span>
-      <span className="leading-tight">{type}</span>
+    <div
+      className={`group cursor-default inline-flex items-center px-3 py-1.5 text-xs font-semibold border rounded-xl whitespace-nowrap transition-all duration-300 hover:scale-105 hover:shadow-lg ${style.bg} ${style.text} ${style.border}`}
+    >
+      <span className="mr-2 text-sm">{style.icon}</span>
+      <span className="font-bold tracking-wide">{type}</span>
     </div>
   );
 }
