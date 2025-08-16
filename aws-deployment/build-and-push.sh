@@ -5,7 +5,7 @@
 set -e
 
 # Configuration
-DOCKER_HUB_USERNAME="hoangvubg6262115"  # Docker Hub username của bạn
+DOCKER_HUB_USERNAME="hoangvubg"  # Docker Hub username của bạn
 APP_NAME="managementapp"
 VERSION=${1:-latest}
 
