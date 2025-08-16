@@ -1,5 +1,5 @@
 #!/bin/bash
-# Backup Script
+# Backup Script (updated for Docker Hub workflow)
 # Run as: bash backup.sh
 
 set -e
@@ -19,7 +19,7 @@ echo "📅 Timestamp: $DATE"
 # Stop containers temporarily for consistent backup
 echo "⏸️  Stopping containers for backup..."
 cd $PROJECT_DIR/aws-deployment
-docker-compose -f docker-compose.prod.yml stop
+docker-compose -f docker-compose.hub.yml stop
 
 # Backup database
 echo "🗄️  Backing up database..."
@@ -69,27 +69,27 @@ Files included:
 - app_$DATE.tar.gz (application source code)
 
 Restore instructions:
-1. Stop containers: docker-compose -f docker-compose.prod.yml down
+1. Stop containers: docker-compose -f docker-compose.hub.yml down
 2. Restore database: cp management_$DATE.db /home/ubuntu/management-app/data/management.db
 3. Restore config: tar -xzf config_$DATE.tar.gz -C /home/ubuntu/management-app/
 4. Restore app: tar -xzf app_$DATE.tar.gz -C /home/ubuntu/
-5. Deploy: bash deploy.sh
+5. Deploy: bash deploy-from-hub.sh
 EOF
 
 # Restart containers
 echo "▶️  Restarting containers..."
-docker-compose -f docker-compose.prod.yml start
+docker-compose -f docker-compose.hub.yml start
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to restart..."
 sleep 30
 
 # Verify containers are running
-if docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
+if docker-compose -f docker-compose.hub.yml ps | grep -q "Up"; then
     echo "✅ Containers restarted successfully"
 else
     echo "⚠️  Warning: Some containers may not have started properly"
-    docker-compose -f docker-compose.prod.yml ps
+    docker-compose -f docker-compose.hub.yml ps
 fi
 
 # Clean up old backups (keep last 7 days)

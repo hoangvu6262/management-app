@@ -1,0 +1,87 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+  APP_NAME: managementapp
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ env.DOCKER_HUB_USERNAME }}/${{ env.APP_NAME }}-client
+          ${{ env.DOCKER_HUB_USERNAME }}/${{ env.APP_NAME }}-server
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push client-app
+      uses: docker/build-push-action@v5
+      with:
+        context: ./client-app
+        file: ./client-app/Dockerfile.prod
+        push: true
+        tags: ${{ env.DOCKER_HUB_USERNAME }}/${{ env.APP_NAME }}-client:${{ github.ref_name }},${{ env.DOCKER_HUB_USERNAME }}/${{ env.APP_NAME }}-client:latest
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          NEXT_PUBLIC_API_URL=http://localhost/api
+          NEXT_PUBLIC_APP_NAME=Management App
+          NEXT_PUBLIC_APP_VERSION=1.0.0
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Build and push server-app
+      uses: docker/build-push-action@v5
+      with:
+        context: ./server-app
+        file: ./server-app/Dockerfile.prod
+        push: true
+        tags: ${{ env.DOCKER_HUB_USERNAME }}/${{ env.APP_NAME }}-server:${{ github.ref_name }},${{ env.DOCKER_HUB_USERNAME }}/${{ env.APP_NAME }}-server:latest
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          cd management-app/aws-deployment
+          export DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
+          export IMAGE_TAG=latest
+          bash deploy-from-hub.sh

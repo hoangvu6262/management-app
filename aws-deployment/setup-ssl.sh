@@ -1,5 +1,5 @@
 #!/bin/bash
-# SSL Setup Script using Let's Encrypt
+# SSL Setup Script using Let's Encrypt (updated for Docker Hub workflow)
 # Run as: sudo bash setup-ssl.sh your-domain.com
 
 DOMAIN=$1
@@ -22,7 +22,7 @@ fi
 # Stop containers to free up port 80
 echo "⏸️  Temporarily stopping containers..."
 cd /home/ubuntu/management-app/aws-deployment
-docker-compose -f docker-compose.prod.yml stop nginx
+docker-compose -f docker-compose.hub.yml stop nginx
 
 # Get SSL certificate
 echo "🎫 Obtaining SSL certificate..."
@@ -41,7 +41,7 @@ cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /home/ubuntu/management-app/aws-d
 cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /home/ubuntu/management-app/aws-deployment/ssl/
 
 # Update docker-compose to use SSL nginx config
-cp docker-compose.prod.yml docker-compose.prod.yml.backup
+cp docker-compose.hub.yml docker-compose.hub.yml.backup
 
 # Update environment variables for HTTPS
 EC2_PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
@@ -52,6 +52,8 @@ NEXT_PUBLIC_APP_VERSION=1.0.0
 EOF
 
 cat > .env << EOF
+DOCKER_HUB_USERNAME=\${DOCKER_HUB_USERNAME}
+IMAGE_TAG=\${IMAGE_TAG:-latest}
 NEXT_PUBLIC_API_URL=https://$DOMAIN/api
 NEXT_PUBLIC_APP_NAME=Management App
 NEXT_PUBLIC_APP_VERSION=1.0.0
@@ -64,7 +66,7 @@ sed -i "s/server_name _;/server_name $DOMAIN;/g" nginx.prod.conf
 
 # Start containers with SSL
 echo "🚀 Starting containers with SSL..."
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.hub.yml up -d
 
 # Wait for services
 sleep 30
@@ -76,12 +78,12 @@ if curl -f https://$DOMAIN/health > /dev/null 2>&1; then
     echo "🔒 Your app is now available at: https://$DOMAIN"
 else
     echo "⚠️  SSL setup completed but health check failed"
-    echo "📋 Check container logs: docker-compose -f docker-compose.prod.yml logs"
+    echo "📋 Check container logs: docker-compose -f docker-compose.hub.yml logs"
 fi
 
 # Setup automatic renewal
 echo "🔄 Setting up automatic SSL renewal..."
-(crontab -l 2>/dev/null; echo "0 12 * * * /usr/bin/certbot renew --quiet --deploy-hook 'cd /home/ubuntu/management-app/aws-deployment && docker-compose -f docker-compose.prod.yml restart nginx'") | crontab -
+(crontab -l 2>/dev/null; echo "0 12 * * * /usr/bin/certbot renew --quiet --deploy-hook 'cd /home/ubuntu/management-app/aws-deployment && docker-compose -f docker-compose.hub.yml restart nginx'") | crontab -
 
 echo ""
 echo "📋 SSL Setup Summary:"

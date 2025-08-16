@@ -1,5 +1,5 @@
 #!/bin/bash
-# Restore Script
+# Restore Script (updated for Docker Hub workflow)
 # Run as: bash restore.sh [backup_date]
 
 BACKUP_DATE=$1
@@ -53,7 +53,7 @@ fi
 # Stop containers
 echo "⏸️  Stopping containers..."
 cd $PROJECT_DIR/aws-deployment
-docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.hub.yml down
 
 # Create backup of current state
 CURRENT_DATE=$(date +%Y%m%d_%H%M%S)
@@ -116,7 +116,7 @@ fi
 # Start containers
 echo "▶️  Starting containers..."
 cd aws-deployment
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.hub.yml up -d
 
 # Wait for services
 echo "⏳ Waiting for services to start..."
@@ -129,12 +129,12 @@ if curl -f http://localhost/health > /dev/null 2>&1; then
     echo "🌍 Your app is available at: http://$EC2_PUBLIC_IP"
 else
     echo "⚠️  Restore completed but health check failed"
-    echo "📋 Check container logs: docker-compose -f docker-compose.prod.yml logs"
+    echo "📋 Check container logs: docker-compose -f docker-compose.hub.yml logs"
 fi
 
 echo ""
 echo "📊 Container status:"
-docker-compose -f docker-compose.prod.yml ps
+docker-compose -f docker-compose.hub.yml ps
 
 echo ""
 echo "✅ Restore process completed!"
