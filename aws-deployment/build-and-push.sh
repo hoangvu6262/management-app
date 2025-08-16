@@ -1,50 +1,69 @@
 #!/bin/bash
-# Local build and push script
+# Local build and push script (Multi-platform)
 # File: build-and-push.sh
 
 set -e
 
 # Configuration
-DOCKER_HUB_USERNAME="hoangvubg"  # Docker Hub username của bạn
+DOCKER_HUB_USERNAME="hoangvubg6262115"  # Docker Hub username của bạn
 APP_NAME="managementapp"
 VERSION=${1:-latest}
 
-echo "🐳 Building and pushing Docker images..."
+echo "🐳 Building and pushing Docker images (Multi-platform)..."
 echo "Username: $DOCKER_HUB_USERNAME"
 echo "Version: $VERSION"
 
-# Login to Docker Hub (chỉ cần 1 lần)
+# Setup buildx if not exists
+echo "🔧 Setting up Docker Buildx..."
+docker buildx create --name multiplatform --use --bootstrap 2>/dev/null || true
+docker buildx use multiplatform
+
+# Login to Docker Hub
 echo "🔐 Logging in to Docker Hub..."
 docker login
 
-# Build client-app
-echo "🏗️ Building client-app..."
+# Build and push client-app (multi-platform)
+echo "🏗️ Building client-app (multi-platform)..."
 cd ../client-app
-docker build -f Dockerfile.prod -t ${DOCKER_HUB_USERNAME}/${APP_NAME}-client:${VERSION} \
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -f Dockerfile.prod \
+  -t ${DOCKER_HUB_USERNAME}/${APP_NAME}-client:${VERSION} \
   --build-arg NEXT_PUBLIC_API_URL=http://localhost/api \
   --build-arg NEXT_PUBLIC_APP_NAME="Management App" \
-  --build-arg NEXT_PUBLIC_APP_VERSION="1.0.0" .
+  --build-arg NEXT_PUBLIC_APP_VERSION="1.0.0" \
+  --push .
 
-# Build server-app
-echo "🏗️ Building server-app..."
+# Build and push server-app (multi-platform)
+echo "🏗️ Building server-app (multi-platform)..."
 cd ../server-app
-docker build -f Dockerfile.prod -t ${DOCKER_HUB_USERNAME}/${APP_NAME}-server:${VERSION} .
-
-# Push images
-echo "📤 Pushing client-app..."
-docker push ${DOCKER_HUB_USERNAME}/${APP_NAME}-client:${VERSION}
-
-echo "📤 Pushing server-app..."
-docker push ${DOCKER_HUB_USERNAME}/${APP_NAME}-server:${VERSION}
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -f Dockerfile.prod \
+  -t ${DOCKER_HUB_USERNAME}/${APP_NAME}-server:${VERSION} \
+  --push .
 
 # Tag as latest if version is not latest
 if [ "$VERSION" != "latest" ]; then
     echo "🏷️ Tagging as latest..."
-    docker tag ${DOCKER_HUB_USERNAME}/${APP_NAME}-client:${VERSION} ${DOCKER_HUB_USERNAME}/${APP_NAME}-client:latest
-    docker tag ${DOCKER_HUB_USERNAME}/${APP_NAME}-server:${VERSION} ${DOCKER_HUB_USERNAME}/${APP_NAME}-server:latest
     
-    docker push ${DOCKER_HUB_USERNAME}/${APP_NAME}-client:latest
-    docker push ${DOCKER_HUB_USERNAME}/${APP_NAME}-server:latest
+    # Build and push latest tags
+    cd ../client-app
+    docker buildx build \
+      --platform linux/amd64,linux/arm64 \
+      -f Dockerfile.prod \
+      -t ${DOCKER_HUB_USERNAME}/${APP_NAME}-client:latest \
+      --build-arg NEXT_PUBLIC_API_URL=http://localhost/api \
+      --build-arg NEXT_PUBLIC_APP_NAME="Management App" \
+      --build-arg NEXT_PUBLIC_APP_VERSION="1.0.0" \
+      --push .
+    
+    cd ../server-app
+    docker buildx build \
+      --platform linux/amd64,linux/arm64 \
+      -f Dockerfile.prod \
+      -t ${DOCKER_HUB_USERNAME}/${APP_NAME}-server:latest \
+      --push .
 fi
 
 echo "✅ Build and push completed!"
@@ -52,9 +71,7 @@ echo "Images pushed:"
 echo "  - ${DOCKER_HUB_USERNAME}/${APP_NAME}-client:${VERSION}"
 echo "  - ${DOCKER_HUB_USERNAME}/${APP_NAME}-server:${VERSION}"
 
-# Clean up local images to save space
-echo "🧹 Cleaning up local images..."
-docker rmi ${DOCKER_HUB_USERNAME}/${APP_NAME}-client:${VERSION} || true
-docker rmi ${DOCKER_HUB_USERNAME}/${APP_NAME}-server:${VERSION} || true
+echo "🧹 Cleaning up local build cache..."
+docker buildx prune -f
 
 cd ../aws-deployment
