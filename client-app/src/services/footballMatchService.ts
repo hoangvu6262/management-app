@@ -171,17 +171,37 @@ class FootballMatchService {
     return amount.toLocaleString("vi-VN");
   }
 
-  // Helper method to get status color
-  getStatusColor(status: string): string {
+  // Helper method to get status style (inline styles)
+  getStatusStyle(status: string): {
+    backgroundColor: string;
+    color: string;
+    borderColor: string;
+  } {
     switch (status) {
       case "COMPLETED":
-        return "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700";
+        return {
+          backgroundColor: "#dcfce7", // green-100
+          color: "#166534", // green-800
+          borderColor: "#dcfce7", // green-300
+        };
       case "PENDING":
-        return "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-700";
+        return {
+          backgroundColor: "#e9d5ff", // purple-100
+          color: "#5b21b6", // purple-800
+          borderColor: "#e9d5ff", // purple-300
+        };
       case "CANCELLED":
-        return "bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-700";
+        return {
+          backgroundColor: "#fecaca", // red-100
+          color: "#991b1b", // red-800
+          borderColor: "#fecaca", // red-300
+        };
       default:
-        return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700";
+        return {
+          backgroundColor: "#f3f4f6", // gray-100
+          color: "#1f2937", // gray-800
+          borderColor: "#d1d5db", // gray-300
+        };
     }
   }
 

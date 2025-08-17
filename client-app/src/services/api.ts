@@ -4,6 +4,13 @@ import { tokenManager } from "./tokenManager";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+// API Response interface
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
 // Create axios instance for regular API calls
 const axiosInstance = axios.create({
   baseURL: API_URL,

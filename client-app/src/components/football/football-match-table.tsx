@@ -123,14 +123,19 @@ export function FootballMatchTable() {
   };
 
   const getStatusBadge = useCallback((status: string, matchId: string) => {
-    const colorClass = footballMatchService.getStatusColor(status);
+    const statusStyle = footballMatchService.getStatusStyle(status);
     return (
       <Select
         value={status}
         onValueChange={(value) => handleStatusChange(matchId, value)}
       >
         <SelectTrigger
-          className={`w-auto min-w-[100px] h-8 px-3 py-1 rounded-full text-xs font-medium border ${colorClass}`}
+          className="w-auto min-w-[100px] h-8 px-3 py-1 rounded-full text-xs font-medium border"
+          style={{
+            backgroundColor: statusStyle.backgroundColor,
+            color: statusStyle.color,
+            borderColor: statusStyle.borderColor
+          }}
         >
           <SelectValue />
         </SelectTrigger>

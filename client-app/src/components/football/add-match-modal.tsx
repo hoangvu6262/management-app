@@ -19,6 +19,17 @@ import {
 } from "@/components/ui/select"
 import { CreateFootballMatchRequest, FootballMatchResponse, footballMatchService } from '@/services/footballMatchService'
 
+// Money formatting utility
+const formatMoney = (value: string | number): string => {
+  const numStr = value.toString().replace(/[^\d]/g, '')
+  if (!numStr) return ''
+  return parseInt(numStr).toLocaleString('vi-VN')
+}
+
+const parseMoney = (formattedValue: string): number => {
+  return parseInt(formattedValue.replace(/[^\d]/g, '') || '0')
+}
+
 interface AddFootballMatchModalProps {
   isOpen: boolean
   onClose: () => void
@@ -149,311 +160,316 @@ export function AddFootballMatchModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[700px] max-h-[95vh] flex flex-col">
+        {/* Fixed Header */}
+        <DialogHeader className="flex-shrink-0 border-b pb-4">
           <DialogTitle>
             {isEditMode ? 'Edit Football Match' : 'Add New Football Match'}
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Controller
-                name="date"
-                control={control}
-                rules={{ required: 'Date is required' }}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    type="date"
-                    placeholder="Select date"
-                  />
-                )}
-              />
-              {errors.date && (
-                <p className="text-sm text-red-500">{errors.date.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="time">Time (24-hour format)</Label>
-              <Controller
-                name="time"
-                control={control}
-                rules={{ 
-                  required: 'Time is required',
-                  pattern: {
-                    value: /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
-                    message: 'Time must be in HH:mm format (24-hour)'
-                  }
-                }}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    type="time"
-                    placeholder="HH:mm"
-                  />
-                )}
-              />
-              {errors.time && (
-                <p className="text-sm text-red-500">{errors.time.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="stadium">Stadium</Label>
-              <Controller
-                name="stadium"
-                control={control}
-                rules={{ required: 'Stadium is required' }}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    placeholder="Enter stadium name"
-                  />
-                )}
-              />
-              {errors.stadium && (
-                <p className="text-sm text-red-500">{errors.stadium.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="team">Team</Label>
-              <Controller
-                name="team"
-                control={control}
-                rules={{ required: 'Team is required' }}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    placeholder="Enter team name"
-                  />
-                )}
-              />
-              {errors.team && (
-                <p className="text-sm text-red-500">{errors.team.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="matchNumber">Match Number</Label>
-              <Controller
-                name="matchNumber"
-                control={control}
-                rules={{ required: 'Match number is required', min: 1 }}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    type="number"
-                    min="1"
-                    placeholder="1"
-                    onChange={(e) => field.onChange(Number(e.target.value))}
-                  />
-                )}
-              />
-              {errors.matchNumber && (
-                <p className="text-sm text-red-500">{errors.matchNumber.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <Controller
-                name="type"
-                control={control}
-                rules={{ required: 'Type is required' }}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select field type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {footballMatchService.getTypeOptions().map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.type && (
-                <p className="text-sm text-red-500">{errors.type.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PENDING">Pending</SelectItem>
-                      <SelectItem value="COMPLETED">Completed</SelectItem>
-                      <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-          </div>
-
-          {/* Financial Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Financial Information</h3>
-            
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto py-4 px-2">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" id="football-match-form">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="totalRevenue">Total Revenue (VND)</Label>
+                <Label htmlFor="date">Date</Label>
                 <Controller
-                  name="totalRevenue"
+                  name="date"
                   control={control}
-                  rules={{ min: 0 }}
+                  rules={{ required: 'Date is required' }}
                   render={({ field }) => (
                     <Input
                       {...field}
-                      type="number"
-                      min="0"
-                      step="1000"
-                      placeholder="0"
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      type="date"
+                      placeholder="Select date"
                     />
                   )}
                 />
-                {errors.totalRevenue && (
-                  <p className="text-sm text-red-500">{errors.totalRevenue.message}</p>
+                {errors.date && (
+                  <p className="text-sm text-red-500">{errors.date.message}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="totalCost">Total Cost (VND)</Label>
+                <Label htmlFor="time">Time (24-hour format)</Label>
                 <Controller
-                  name="totalCost"
+                  name="time"
                   control={control}
-                  rules={{ min: 0 }}
+                  rules={{ 
+                    required: 'Time is required',
+                    pattern: {
+                      value: /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/,
+                      message: 'Time must be in HH:mm format (24-hour)'
+                    }
+                  }}
                   render={({ field }) => (
                     <Input
                       {...field}
-                      type="number"
-                      min="0"
-                      step="1000"
-                      placeholder="0"
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      type="time"
+                      placeholder="HH:mm"
                     />
                   )}
                 />
-                {errors.totalCost && (
-                  <p className="text-sm text-red-500">{errors.totalCost.message}</p>
+                {errors.time && (
+                  <p className="text-sm text-red-500">{errors.time.message}</p>
                 )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="recordingMoneyForPhotographer">Recording Money (VND)</Label>
+                <Label htmlFor="stadium">Stadium</Label>
                 <Controller
-                  name="recordingMoneyForPhotographer"
+                  name="stadium"
                   control={control}
-                  rules={{ min: 0 }}
+                  rules={{ required: 'Stadium is required' }}
                   render={({ field }) => (
                     <Input
                       {...field}
-                      type="number"
-                      min="0"
-                      step="1000"
-                      placeholder="0"
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      placeholder="Enter stadium name"
                     />
                   )}
                 />
-                {errors.recordingMoneyForPhotographer && (
-                  <p className="text-sm text-red-500">{errors.recordingMoneyForPhotographer.message}</p>
+                {errors.stadium && (
+                  <p className="text-sm text-red-500">{errors.stadium.message}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="moneyForCameraman">Cameraman Money (VND)</Label>
+                <Label htmlFor="team">Team</Label>
                 <Controller
-                  name="moneyForCameraman"
+                  name="team"
                   control={control}
-                  rules={{ min: 0 }}
+                  rules={{ required: 'Team is required' }}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      placeholder="Enter team name"
+                    />
+                  )}
+                />
+                {errors.team && (
+                  <p className="text-sm text-red-500">{errors.team.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="matchNumber">Match Number</Label>
+                <Controller
+                  name="matchNumber"
+                  control={control}
+                  rules={{ required: 'Match number is required', min: 1 }}
                   render={({ field }) => (
                     <Input
                       {...field}
                       type="number"
-                      min="0"
-                      step="1000"
-                      placeholder="0"
+                      min="1"
+                      placeholder="1"
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   )}
                 />
-                {errors.moneyForCameraman && (
-                  <p className="text-sm text-red-500">{errors.moneyForCameraman.message}</p>
+                {errors.matchNumber && (
+                  <p className="text-sm text-red-500">{errors.matchNumber.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="type">Type</Label>
+                <Controller
+                  name="type"
+                  control={control}
+                  rules={{ required: 'Type is required' }}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select field type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {footballMatchService.getTypeOptions().map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.type && (
+                  <p className="text-sm text-red-500">{errors.type.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PENDING">Pending</SelectItem>
+                        <SelectItem value="COMPLETED">Completed</SelectItem>
+                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Financial Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium border-b pb-2">Financial Information</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="totalRevenue">Total Revenue (VND)</Label>
+                  <Controller
+                    name="totalRevenue"
+                    control={control}
+                    rules={{ min: 0 }}
+                    render={({ field }) => (
+                      <Input
+                        value={formatMoney(field.value)}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const formatted = formatMoney(e.target.value)
+                          field.onChange(parseMoney(formatted))
+                        }}
+                      />
+                    )}
+                  />
+                  {errors.totalRevenue && (
+                    <p className="text-sm text-red-500">{errors.totalRevenue.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="totalCost">Total Cost (VND)</Label>
+                  <Controller
+                    name="totalCost"
+                    control={control}
+                    rules={{ min: 0 }}
+                    render={({ field }) => (
+                      <Input
+                        value={formatMoney(field.value)}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const formatted = formatMoney(e.target.value)
+                          field.onChange(parseMoney(formatted))
+                        }}
+                      />
+                    )}
+                  />
+                  {errors.totalCost && (
+                    <p className="text-sm text-red-500">{errors.totalCost.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="recordingMoneyForPhotographer">Recording Money (VND)</Label>
+                  <Controller
+                    name="recordingMoneyForPhotographer"
+                    control={control}
+                    rules={{ min: 0 }}
+                    render={({ field }) => (
+                      <Input
+                        value={formatMoney(field.value)}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const formatted = formatMoney(e.target.value)
+                          field.onChange(parseMoney(formatted))
+                        }}
+                      />
+                    )}
+                  />
+                  {errors.recordingMoneyForPhotographer && (
+                    <p className="text-sm text-red-500">{errors.recordingMoneyForPhotographer.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="moneyForCameraman">Cameraman Money (VND)</Label>
+                  <Controller
+                    name="moneyForCameraman"
+                    control={control}
+                    rules={{ min: 0 }}
+                    render={({ field }) => (
+                      <Input
+                        value={formatMoney(field.value)}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const formatted = formatMoney(e.target.value)
+                          field.onChange(parseMoney(formatted))
+                        }}
+                      />
+                    )}
+                  />
+                  {errors.moneyForCameraman && (
+                    <p className="text-sm text-red-500">{errors.moneyForCameraman.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="discount">Discount (VND)</Label>
+                <Controller
+                  name="discount"
+                  control={control}
+                  rules={{ min: 0 }}
+                  render={({ field }) => (
+                    <Input
+                      value={formatMoney(field.value)}
+                      placeholder="0"
+                      onChange={(e) => {
+                        const formatted = formatMoney(e.target.value)
+                        field.onChange(parseMoney(formatted))
+                      }}
+                    />
+                  )}
+                />
+                {errors.discount && (
+                  <p className="text-sm text-red-500">{errors.discount.message}</p>
                 )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="discount">Discount (VND)</Label>
+              <Label htmlFor="note">Notes</Label>
               <Controller
-                name="discount"
+                name="note"
                 control={control}
-                rules={{ min: 0 }}
                 render={({ field }) => (
                   <Input
                     {...field}
-                    type="number"
-                    min="0"
-                    step="1000"
-                    placeholder="0"
-                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    placeholder="Additional notes (optional)"
                   />
                 )}
               />
-              {errors.discount && (
-                <p className="text-sm text-red-500">{errors.discount.message}</p>
-              )}
             </div>
-          </div>
+          </form>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="note">Notes</Label>
-            <Controller
-              name="note"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  placeholder="Additional notes (optional)"
-                />
-              )}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : (isEditMode ? 'Update Match' : 'Add Match')}
-            </Button>
-          </DialogFooter>
-        </form>
+        {/* Fixed Footer */}
+        <DialogFooter className="flex-shrink-0 border-t pt-4">
+          <Button type="button" variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="football-match-form" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : (isEditMode ? 'Update Match' : 'Add Match')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

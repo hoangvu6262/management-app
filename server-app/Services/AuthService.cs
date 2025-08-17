@@ -54,7 +54,7 @@ namespace ManagementApp.Services
             _context.RefreshTokens.Add(refreshTokenEntity);
             await _context.SaveChangesAsync();
 
-            var expirationMinutes = int.Parse(_configuration["JwtSettings:AccessTokenExpirationMinutes"] ?? "5");
+            var expirationMinutes = int.Parse(_configuration["JwtSettings:AccessTokenExpirationMinutes"] ?? "60");
 
             return new LoginResponseDto
             {
@@ -132,9 +132,9 @@ namespace ManagementApp.Services
                 .Include(rt => rt.User)
                 .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken);
 
-            if (refreshToken == null || 
-                refreshToken.IsUsed || 
-                refreshToken.IsRevoked || 
+            if (refreshToken == null ||
+                refreshToken.IsUsed ||
+                refreshToken.IsRevoked ||
                 refreshToken.ExpiryDate <= DateTime.UtcNow ||
                 !refreshToken.User.IsActive)
             {

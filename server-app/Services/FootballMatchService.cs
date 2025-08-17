@@ -179,7 +179,8 @@ namespace ManagementApp.Services
             // Combined search for stadium and team
             if (!string.IsNullOrEmpty(filter.SearchText))
             {
-                query = query.Where(m => m.Stadium.Contains(filter.SearchText) || m.Team.Contains(filter.SearchText));
+                var searchText = filter.SearchText.Trim().ToLower();
+                query = query.Where(m => m.Stadium.ToLower().Contains(searchText) || m.Team.ToLower().Contains(searchText));
             }
 
             if (!string.IsNullOrEmpty(filter.Status))

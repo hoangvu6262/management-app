@@ -18,6 +18,18 @@ namespace ManagementApp.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Configure DateTime properties for PostgreSQL
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
+                    {
+                        property.SetColumnType("timestamp without time zone");
+                    }
+                }
+            }
+
             // User configuration
             modelBuilder.Entity<User>(entity =>
             {

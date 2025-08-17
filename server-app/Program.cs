@@ -7,6 +7,9 @@ using ManagementApp.Data;
 using ManagementApp.Services;
 using ManagementApp.Middlewares;
 
+// Configure Npgsql to handle DateTime without timezone info
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -63,35 +66,35 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
         if (!string.IsNullOrEmpty(connectionString))
         {
-            try
-            {
-                Console.WriteLine($"🔗 Raw DATABASE_URL length: {connectionString.Length}");
-
-                if (connectionString.StartsWith("postgresql://"))
-                {
-                    // Parse PostgreSQL URL safely
-                    var uri = new Uri(connectionString);
-                    var userInfo = uri.UserInfo?.Split(':') ?? new string[0];
-
-                    var username = userInfo.Length > 0 ? userInfo[0] : "";
-                    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
-                    var host = uri.Host ?? "localhost";
-                    var port = uri.Port > 0 ? uri.Port : 5432;
-                    var database = !string.IsNullOrEmpty(uri.AbsolutePath) ? uri.AbsolutePath.Trim('/') : "neondb";
-
-                    // Build connection string with validation
-                    if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
-                    {
-                        var npgsqlConnectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;Pooling=true;Maximum Pool Size=20;";
-
-                        options.UseNpgsql(npgsqlConnectionString);
-                        Console.WriteLine($"✅ PostgreSQL configured: {host}:{port}/{database} (user: {username})");
-                    }
-                    else
-                    {
-                        throw new ArgumentException("Missing username or password in connection string");
-                    }
-                }
+        try
+        {
+        Console.WriteLine($"🔗 Raw DATABASE_URL length: {connectionString.Length}");
+        
+        if (connectionString.StartsWith("postgresql://"))
+        {
+        // Parse PostgreSQL URL safely
+        var uri = new Uri(connectionString);
+        var userInfo = uri.UserInfo?.Split(':') ?? new string[0];
+        
+        var username = userInfo.Length > 0 ? userInfo[0] : "";
+        var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+        var host = uri.Host ?? "localhost";
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        var database = !string.IsNullOrEmpty(uri.AbsolutePath) ? uri.AbsolutePath.Trim('/') : "neondb";
+        
+        // Build connection string with validation
+        if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+        {
+        var npgsqlConnectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;Pooling=true;Maximum Pool Size=20;";
+        
+        options.UseNpgsql(npgsqlConnectionString, o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+        Console.WriteLine($"✅ PostgreSQL configured: {host}:{port}/{database} (user: {username})");
+        }
+        else
+        {
+        throw new ArgumentException("Missing username or password in connection string");
+        }
+        }
                 else
                 {
                     throw new ArgumentException("DATABASE_URL is not a PostgreSQL connection string");
@@ -174,6 +177,7 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IFootballMatchService, FootballMatchService>();
 builder.Services.AddScoped<ICalendarEventService, CalendarEventService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 var app = builder.Build();
 

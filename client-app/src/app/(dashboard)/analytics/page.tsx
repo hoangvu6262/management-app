@@ -1,241 +1,431 @@
-'use client'
+"use client";
 
-import { AnalysisCard } from '@/components/ui/analysis-card'
-import { ChartCard } from '@/components/ui/chart-card'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, TrendingUp, DollarSign, BarChart3, Eye, MousePointer, Clock, Target } from 'lucide-react'
+import React, { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Download, Calendar } from "lucide-react";
+import { AnalyticsFilterComponent } from "@/components/analytics/AnalyticsFilter";
+import { AnalyticsStats } from "@/components/analytics/AnalyticsStats";
+import { FinancialTrendChart } from "@/components/analytics/FinancialTrendChart";
+import { StatusPieChart } from "@/components/analytics/StatusPieChart";
+import { RevenueBarChart } from "@/components/analytics/RevenueBarChart";
+import { PersonnelCostChart } from "@/components/analytics/PersonnelCostChart";
+import { MatchTypeChart } from "@/components/analytics/MatchTypeChart";
+import { TopStadiums } from "@/components/analytics/TopStadiums";
+import { TopTeams } from "@/components/analytics/TopTeams";
+import {
+  analyticsService,
+  type AnalyticsFilter,
+  type AnalyticsDashboard,
+  type StatusDistribution,
+  type MonthlyFinancialTrend,
+  type MatchTypeDistribution,
+  type PhotoCameraAnalysis,
+} from "@/services/analyticsService";
 
 export default function AnalyticsPage() {
-  // Mock analytics data
-  const pageViewsData = [
-    {
-      name: 'Page Views',
-      data: [1200, 1900, 3000, 5000, 2000, 3000, 4500, 6000, 4200, 3800, 5200, 6800]
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<AnalyticsFilter>({});
+  const [dashboardData, setDashboardData] = useState<AnalyticsDashboard | null>(
+    null
+  );
+  const [statusDistribution, setStatusDistribution] = useState<
+    StatusDistribution[]
+  >([]);
+  const [revenueProfitTrend, setRevenueProfitTrend] = useState<
+    MonthlyFinancialTrend[]
+  >([]);
+  const [matchTypeDistribution, setMatchTypeDistribution] = useState<
+    MatchTypeDistribution[]
+  >([]);
+  const [personnelAnalysis, setPersonnelAnalysis] =
+    useState<PhotoCameraAnalysis | null>(null);
+
+  const loadAnalyticsData = async (currentFilter: AnalyticsFilter = {}) => {
+    try {
+      setLoading(true);
+      console.log("🔄 Loading analytics data with filter:", currentFilter);
+
+      // Load all data in parallel with better error handling
+      const results = await Promise.allSettled([
+        analyticsService.getDashboardAnalytics(currentFilter),
+        analyticsService.getStatusDistribution(currentFilter),
+        analyticsService.getRevenueProfitTrend(currentFilter),
+        analyticsService.getMatchTypeDistribution(currentFilter),
+        analyticsService.getPhotographerCameramanAnalysis(currentFilter),
+      ]);
+
+      // Handle results with proper error checking
+      if (results[0].status === "fulfilled") {
+        // console.log('✅ Dashboard data:', results[0].value)
+        setDashboardData(results[0].value);
+      } else {
+        console.error("❌ Dashboard data failed:", results[0].reason);
+      }
+
+      if (results[1].status === "fulfilled") {
+        // console.log('✅ Status distribution:', results[1].value)
+        setStatusDistribution(results[1].value);
+      } else {
+        console.error("❌ Status distribution failed:", results[1].reason);
+      }
+
+      if (results[2].status === "fulfilled") {
+        // console.log('✅ Revenue profit trend:', results[2].value)
+        setRevenueProfitTrend(results[2].value);
+      } else {
+        console.error("❌ Revenue profit trend failed:", results[2].reason);
+      }
+
+      if (results[3].status === "fulfilled") {
+        // console.log('✅ Match type distribution:', results[3].value)
+        setMatchTypeDistribution(results[3].value);
+      } else {
+        console.error("❌ Match type distribution failed:", results[3].reason);
+      }
+
+      if (results[4].status === "fulfilled") {
+        // console.log('✅ Personnel analysis:', results[4].value)
+        setPersonnelAnalysis(results[4].value);
+      } else {
+        console.error("❌ Personnel analysis failed:", results[4].reason);
+      }
+
+      // Log any failed requests
+      results.forEach((result, index) => {
+        if (result.status === "rejected") {
+          console.error(`Analytics request ${index} failed:`, result.reason);
+        }
+      });
+    } catch (error) {
+      console.error("Error loading analytics data:", error);
+    } finally {
+      setLoading(false);
     }
-  ]
+  };
 
-  const userActivityData = [
-    {
-      name: 'Active Users',
-      data: [300, 450, 600, 800, 400, 600, 900, 1200, 850, 760, 1040, 1360]
-    },
-    {
-      name: 'New Users',
-      data: [150, 225, 300, 400, 200, 300, 450, 600, 425, 380, 520, 680]
-    }
-  ]
+  const handleFilterChange = (newFilter: AnalyticsFilter) => {
+    setFilter(newFilter);
+    loadAnalyticsData(newFilter);
+  };
 
-  const deviceUsageData = [
-    { name: 'Desktop', y: 45 },
-    { name: 'Mobile', y: 35 },
-    { name: 'Tablet', y: 20 }
-  ]
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadAnalyticsData(filter);
+    setRefreshing(false);
+  };
 
-  const conversionFunnelData = [
-    {
-      name: 'Conversion Rate',
-      data: [2.5, 3.2, 2.8, 4.1, 3.8, 4.5, 5.2, 4.8, 5.1, 4.9, 5.8, 6.2]
-    }
-  ]
+  const handleExport = async () => {
+    // TODO: Implement export functionality
+    console.log("Export analytics data");
+  };
 
-  const categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  useEffect(() => {
+    loadAnalyticsData();
+  }, []);
 
-  const topPages = [
-    { page: '/dashboard', views: 12580, uniqueViews: 8450, bounceRate: '32%' },
-    { page: '/analytics', views: 8940, uniqueViews: 6230, bounceRate: '28%' },
-    { page: '/calendar', views: 6750, uniqueViews: 4890, bounceRate: '35%' },
-    { page: '/football-matches', views: 5420, uniqueViews: 3980, bounceRate: '40%' },
-    { page: '/projects', views: 4230, uniqueViews: 3140, bounceRate: '38%' }
-  ]
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2">
+          <RefreshCw className="h-4 w-4 animate-spin" />
+          <span>Loading analytics...</span>
+        </div>
+      </div>
+    );
+  }
 
-  const trafficSources = [
-    { source: 'Direct', visitors: 15420, percentage: 45 },
-    { source: 'Google Search', visitors: 12340, percentage: 36 },
-    { source: 'Social Media', visitors: 4230, percentage: 12 },
-    { source: 'Referral', visitors: 2410, percentage: 7 }
-  ]
+  if (!dashboardData) {
+    // console.log('⚠️ Dashboard data is null/undefined, showing retry screen');
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-muted-foreground">No data available</p>
+          <Button onClick={() => loadAnalyticsData()} className="mt-2">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Debug Info - Remove in production */}
+      {/* {process.env.NODE_ENV === "development" && (
+        <div className="bg-muted p-4 rounded-lg">
+          <h3 className="font-semibold mb-2">Debug Info:</h3>
+          <p>Dashboard Data: {dashboardData ? "Available" : "Null"}</p>
+          <p>Status Distribution: {statusDistribution?.length || 0} items</p>
+          <p>Revenue Profit Trend: {revenueProfitTrend?.length || 0} items</p>
+          <p>
+            Match Type Distribution: {matchTypeDistribution?.length || 0} items
+          </p>
+          <p>Personnel Analysis: {personnelAnalysis ? "Available" : "Null"}</p>
+        </div>
+      )} */}
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* Phần tiêu đề */}
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">
+            Analytics Dashboard
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {dashboardData.period} • Generated at{" "}
+            {new Date(dashboardData.generatedAt).toLocaleString()}
+          </p>
+        </div>
+
+        {/* Nhóm nút */}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <AnalyticsFilterComponent
+        onFilterChange={handleFilterChange}
+        initialFilter={filter}
+      />
+
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <AnalysisCard
-          title="Total Page Views"
-          value="125.6k"
-          subtitle="This month"
-          icon={<Eye className="h-4 w-4" />}
-          trend={{ value: 18, isPositive: true }}
-          color="blue"
+      <AnalyticsStats
+        financialStats={dashboardData.financialStats}
+        matchStats={dashboardData.matchStats}
+        personnelStats={dashboardData.personnelStats}
+      />
+
+      {/* Financial Charts */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <FinancialTrendChart
+          data={revenueProfitTrend}
+          title="Revenue vs Profit Trend"
         />
-        <AnalysisCard
-          title="Unique Visitors"
-          value="42.3k"
-          subtitle="Active users"
-          icon={<Users className="h-4 w-4" />}
-          trend={{ value: 12, isPositive: true }}
-          color="green"
-        />
-        <AnalysisCard
-          title="Avg. Session Duration"
-          value="3m 42s"
-          subtitle="Per session"
-          icon={<Clock className="h-4 w-4" />}
-          trend={{ value: 8, isPositive: true }}
-          color="purple"
-        />
-        <AnalysisCard
-          title="Conversion Rate"
-          value="6.2%"
-          subtitle="Goal completion"
-          icon={<Target className="h-4 w-4" />}
-          trend={{ value: 15, isPositive: true }}
-          color="orange"
+        <RevenueBarChart
+          data={dashboardData.monthlyTrends}
+          title="Monthly Revenue"
         />
       </div>
 
-      {/* Main Charts */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
-        <ChartCard
-          title="Page Views Trend"
-          type="area"
-          data={pageViewsData}
-          categories={categories}
-          height={300}
-          colors={['#3B82F6']}
+      {/* Status and Type Distribution */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <StatusPieChart
+          data={statusDistribution}
+          title="Match Status Distribution"
         />
-        <ChartCard
-          title="User Activity"
-          type="line"
-          data={userActivityData}
-          categories={categories}
-          height={300}
-          colors={['#10B981', '#8B5CF6']}
+        <MatchTypeChart
+          data={matchTypeDistribution}
+          title="Match Type Distribution"
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
-        <ChartCard
-          title="Device Usage"
-          type="pie"
-          data={deviceUsageData}
-          height={300}
-          colors={['#3B82F6', '#10B981', '#F59E0B']}
+      {/* Personnel Analysis */}
+      {personnelAnalysis && (
+        <div className="grid grid-cols-1 gap-6">
+          <PersonnelCostChart
+            data={personnelAnalysis.monthlyCosts}
+            title="Personnel Costs by Month"
+          />
+        </div>
+      )}
+
+      {/* Top Performers */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <TopStadiums
+          data={dashboardData.topStadiums}
+          title="Top 5 Stadiums by Revenue"
+          limit={5}
         />
-        <ChartCard
-          title="Conversion Rate"
-          type="column"
-          data={conversionFunnelData}
-          categories={categories}
-          height={300}
-          colors={['#EF4444']}
+        <TopTeams
+          data={dashboardData.topTeams}
+          title="Top 5 Teams by Revenue"
+          limit={5}
         />
       </div>
 
-      {/* Data Tables */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
-        {/* Top Pages */}
+      {/* Additional Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Financial Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>Top Pages</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              💰 Financial Summary
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {topPages.map((page, index) => (
-                <div key={page.page} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium">{page.page}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {page.views.toLocaleString()} views
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">{page.uniqueViews.toLocaleString()}</p>
-                    <p className="text-sm text-muted-foreground">Bounce: {page.bounceRate}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Total Revenue
+                </span>
+                <span className="font-semibold">
+                  {new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                    minimumFractionDigits: 0,
+                  }).format(dashboardData.financialStats.totalRevenue)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Total Cost
+                </span>
+                <span className="font-semibold text-red-600">
+                  {new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                    minimumFractionDigits: 0,
+                  }).format(dashboardData.financialStats.totalCost)}
+                </span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="text-sm font-medium">Net Profit</span>
+                <span
+                  className={`font-bold ${
+                    dashboardData.financialStats.totalProfit > 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                    minimumFractionDigits: 0,
+                  }).format(dashboardData.financialStats.totalProfit)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Profit Margin
+                </span>
+                <span
+                  className={`font-semibold ${
+                    dashboardData.financialStats.profitMargin > 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {dashboardData.financialStats.profitMargin.toFixed(2)}%
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Traffic Sources */}
+        {/* Match Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>Traffic Sources</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              ⚽ Match Summary
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {trafficSources.map((source) => (
-                <div key={source.source} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-                      <span className="text-white text-xs font-medium">
-                        {source.source[0]}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium">{source.source}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {source.visitors.toLocaleString()} visitors
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">{source.percentage}%</p>
-                    <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary rounded-full transition-all"
-                        style={{ width: `${source.percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Total Matches
+                </span>
+                <span className="font-semibold">
+                  {dashboardData.matchStats.totalMatches}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-green-600">✅ Completed</span>
+                <span className="font-semibold">
+                  {dashboardData.matchStats.completedMatches}(
+                  {dashboardData.matchStats.completedPercentage.toFixed(1)}%)
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-yellow-600">⏳ Pending</span>
+                <span className="font-semibold">
+                  {dashboardData.matchStats.pendingMatches}(
+                  {dashboardData.matchStats.pendingPercentage.toFixed(1)}%)
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-red-600">❌ Cancelled</span>
+                <span className="font-semibold">
+                  {dashboardData.matchStats.cancelledMatches}(
+                  {dashboardData.matchStats.cancelledPercentage.toFixed(1)}%)
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Additional Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <AnalysisCard
-          title="Bounce Rate"
-          value="34.2%"
-          subtitle="Average bounce rate"
-          icon={<MousePointer className="h-4 w-4" />}
-          trend={{ value: 3, isPositive: false }}
-          color="yellow"
-        />
-        <AnalysisCard
-          title="Pages per Session"
-          value="4.8"
-          subtitle="Average pages"
-          icon={<BarChart3 className="h-4 w-4" />}
-          trend={{ value: 12, isPositive: true }}
-          color="green"
-        />
-        <AnalysisCard
-          title="Revenue per User"
-          value="$42.30"
-          subtitle="Average RPU"
-          icon={<DollarSign className="h-4 w-4" />}
-          trend={{ value: 18, isPositive: true }}
-          color="orange"
-        />
-        <AnalysisCard
-          title="Goal Completions"
-          value="1,284"
-          subtitle="This month"
-          icon={<Target className="h-4 w-4" />}
-          trend={{ value: 25, isPositive: true }}
-          color="purple"
-        />
+        {/* Personnel Summary */}
+        {personnelAnalysis && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                📷 Personnel Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Photographer Cost
+                  </span>
+                  <span className="font-semibold">
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                      minimumFractionDigits: 0,
+                    }).format(personnelAnalysis.totalPhotographerCost)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Cameraman Cost
+                  </span>
+                  <span className="font-semibold">
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                      minimumFractionDigits: 0,
+                    }).format(personnelAnalysis.totalCameramanCost)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Photographer Rate
+                  </span>
+                  <span className="font-semibold">
+                    {personnelAnalysis.photographerRate.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Cameraman Rate
+                  </span>
+                  <span className="font-semibold">
+                    {personnelAnalysis.cameramanRate.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
-  )
+  );
 }
