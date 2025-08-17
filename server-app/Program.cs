@@ -11,16 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
         Title = "Management App API",
         Version = "v1",
-        Description = "Management Application API for Football Matches and Calendar Events"
+        Description = "Management Application API"
     });
 
     // Add JWT Authentication to Swagger
@@ -54,19 +52,73 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     if (builder.Environment.IsDevelopment())
     {
-        // Use SQLite for development
+        // Development: SQLite
         options.UseSqlite("Data Source=management.db");
+        Console.WriteLine("🔧 Using SQLite for development");
     }
     else
     {
-        // Use SQL Server for production
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+        // Production: Try PostgreSQL first, fallback to SQLite
+        var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+
+        if (!string.IsNullOrEmpty(connectionString))
+        {
+            try
+            {
+                Console.WriteLine($"🔗 Raw DATABASE_URL length: {connectionString.Length}");
+
+                if (connectionString.StartsWith("postgresql://"))
+                {
+                    // Parse PostgreSQL URL safely
+                    var uri = new Uri(connectionString);
+                    var userInfo = uri.UserInfo?.Split(':') ?? new string[0];
+
+                    var username = userInfo.Length > 0 ? userInfo[0] : "";
+                    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+                    var host = uri.Host ?? "localhost";
+                    var port = uri.Port > 0 ? uri.Port : 5432;
+                    var database = !string.IsNullOrEmpty(uri.AbsolutePath) ? uri.AbsolutePath.Trim('/') : "neondb";
+
+                    // Build connection string with validation
+                    if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+                    {
+                        var npgsqlConnectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;Pooling=true;Maximum Pool Size=20;";
+
+                        options.UseNpgsql(npgsqlConnectionString);
+                        Console.WriteLine($"✅ PostgreSQL configured: {host}:{port}/{database} (user: {username})");
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Missing username or password in connection string");
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException("DATABASE_URL is not a PostgreSQL connection string");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ PostgreSQL setup failed: {ex.Message}");
+                Console.WriteLine("🔄 Falling back to SQLite");
+
+                options.UseSqlite("Data Source=production.db");
+            }
+        }
+        else
+        {
+            Console.WriteLine("⚠️ No DATABASE_URL found, using SQLite");
+            options.UseSqlite("Data Source=production.db");
+        }
     }
 });
 
 // JWT Configuration
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["AccessTokenSecret"];
+var jwtSection = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSection["AccessTokenSecret"]
+                ?? throw new InvalidOperationException("JwtSettings:AccessTokenSecret is missing");
+var issuer = jwtSection["Issuer"] ?? "ManagementApp";
+var audience = jwtSection["Audience"] ?? "ManagementApp-Users";
 
 builder.Services.AddAuthentication(options =>
 {
@@ -81,31 +133,43 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!)),
+        ValidIssuer = issuer,
+        ValidAudience = audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
         ClockSkew = TimeSpan.Zero
     };
 });
 
 builder.Services.AddAuthorization();
 
-// CORS Configuration
-var corsSettings = builder.Configuration.GetSection("CorsSettings");
-var allowedOrigins = corsSettings.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000" };
-
+// CORS Configuration with flexible origins
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(allowedOrigins)
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        policy.SetIsOriginAllowed(origin =>
+        {
+            if (string.IsNullOrEmpty(origin)) return false;
+            
+            // Allow localhost for development
+            if (origin.StartsWith("http://localhost:") || origin.StartsWith("https://localhost:"))
+                return true;
+            
+            // Allow any vercel.app subdomain
+            if (origin.EndsWith(".vercel.app"))
+                return true;
+            
+            // Allow specific production domains
+            var allowedDomains = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS")?.Split(',') ?? new string[0];
+            return allowedDomains.Contains(origin);
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
 
-// Register Services
+// Register Application Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IFootballMatchService, FootballMatchService>();
@@ -114,51 +178,98 @@ builder.Services.AddScoped<ICalendarEventService, CalendarEventService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Management App API V1");
-        c.RoutePrefix = string.Empty; // Set Swagger UI at apps root
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Management App API V1");
+    c.RoutePrefix = "swagger";
+});
 
-// Global Error Handling
-app.UseErrorHandling();
-
-app.UseHttpsRedirection();
-
-app.UseCors("AllowFrontend");
-
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Health check
+app.MapGet("/health", () => "Healthy")
+   .WithName("HealthCheck")
+   .WithTags("Health")
+   .AllowAnonymous();
+
+// Database info endpoint
+app.MapGet("/db-info", () =>
+{
+    var dbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown";
+
+    return new
+    {
+        environment = environment,
+        hasDbUrl = !string.IsNullOrEmpty(dbUrl),
+        dbType = dbUrl?.StartsWith("postgresql://") == true ? "PostgreSQL" : "SQLite",
+        dbUrlLength = dbUrl?.Length ?? 0,
+        timestamp = DateTime.UtcNow
+    };
+})
+.WithName("DatabaseInfo")
+.WithTags("Database")
+.AllowAnonymous();
+
+app.MapGet("/", () => new
+{
+    message = "Management App API",
+    status = "running",
+    environment = app.Environment.EnvironmentName,
+    timestamp = DateTime.UtcNow,
+    swagger = "/swagger"
+})
+.WithName("GetInfo")
+.WithTags("Info")
+.AllowAnonymous();
+
 app.MapControllers();
 
-// Seed default data
+// Database setup
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    
-    // Ensure the database is created
-    context.Database.EnsureCreated();
-    
-    // Seed default admin user if not exists
-    if (!context.Users.Any())
+    try
     {
-        var adminUser = new ManagementApp.Models.User
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        Console.WriteLine("🔌 Testing database connection...");
+
+        if (await context.Database.CanConnectAsync())
         {
-            Username = "admin",
-            Email = "admin@managementapp.com",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
-            FullName = "System Administrator",
-            Role = ManagementApp.Constants.UserRoles.Admin,
-            IsActive = true
-        };
-        
-        context.Users.Add(adminUser);
-        context.SaveChanges();
+            Console.WriteLine("✅ Database connection successful");
+
+            await context.Database.EnsureCreatedAsync();
+            Console.WriteLine("✅ Database schema ensured");
+
+            // Seed default admin user
+            if (!context.Users.Any())
+            {
+                var adminUser = new ManagementApp.Models.User
+                {
+                    Username = "admin",
+                    Email = "admin@managementapp.com",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
+                    FullName = "System Administrator",
+                    Role = ManagementApp.Constants.UserRoles.Admin,
+                    IsActive = true
+                };
+
+                context.Users.Add(adminUser);
+                await context.SaveChangesAsync();
+                Console.WriteLine("✅ Default admin user created");
+            }
+        }
+        else
+        {
+            Console.WriteLine("❌ Cannot connect to database");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Database error: {ex.Message}");
     }
 }
 
