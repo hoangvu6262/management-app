@@ -1,10 +1,12 @@
 "use client";
 
+import "@/styles/profile-mobile.css";
 import { useState, useEffect } from "react";
 import { ThemeProvider } from "next-themes";
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { NotificationToast } from "@/components/notifications/NotificationToast";
+import { Toaster } from "sonner";
 // import { DebugAuth } from "@/components/debug/DebugAuth";
 // import { TokenExpiryTest } from "@/components/debug/TokenExpiryTest";
 // import { SimpleApiTest } from "@/components/debug/SimpleApiTest";
@@ -97,13 +99,13 @@ export default function DashboardLayout({
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
           <Header
             title="Dashboard"
             onMenuClick={() => setSidebarOpen(true)}
             user={user}
           />
-          <main className="flex-1 overflow-hidden p-4 lg:p-6">
+          <main className="flex-1 overflow-hidden p-2 sm:p-4 lg:p-6">
             <div className="h-full overflow-y-auto hide-scrollbar">
               {children}
             </div>
@@ -112,6 +114,7 @@ export default function DashboardLayout({
 
         {/* Notifications */}
         <NotificationToast />
+        <Toaster position="top-right" richColors />
 
         {/* Debug info */}
         {/* <DebugAuth />

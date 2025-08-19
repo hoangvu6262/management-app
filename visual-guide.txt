@@ -1,0 +1,47 @@
+🎯 VISUAL GUIDE: Adding BackupCodes to Neon Database
+==================================================
+
+┌─────────────────────────────────────────────────────────────┐
+│                    NEON CONSOLE                             │
+├─────────────────────────────────────────────────────────────┤
+│  [Dashboard] [SQL Editor] [Settings] [Monitoring]          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  SQL Editor                                    [Run Query]  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ ALTER TABLE "Users"                                 │   │
+│  │ ADD COLUMN IF NOT EXISTS "BackupCodes" TEXT NULL;   │   │
+│  │                                                     │   │
+│  │ -- Click Run Query button after pasting ↑          │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  Results:                                                   │
+│  ✅ ALTER TABLE                                             │
+│  ✅ Query executed successfully                             │
+└─────────────────────────────────────────────────────────────┘
+
+WHAT TO DO:
+1. Open https://console.neon.tech/
+2. Navigate to your project
+3. Click "SQL Editor" 
+4. Paste the SQL command above
+5. Click "Run Query"
+6. Should see "ALTER TABLE" success message
+
+VERIFICATION:
+Run this to check if column was added:
+
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'Users' 
+AND column_name = 'BackupCodes';
+
+Expected result:
+ column_name | data_type 
+-------------+-----------
+ BackupCodes | text
+
+🎯 AFTER ADDING COLUMN:
+1. Restart Fly app: fly apps restart management-app-backend
+2. Test login: should return 200 OK instead of 500 error
+3. No more BackupCodes column errors in logs

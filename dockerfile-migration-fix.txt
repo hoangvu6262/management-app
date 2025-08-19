@@ -1,0 +1,7 @@
+# Add this to your Dockerfile to auto-run migrations on deployment
+
+# At the end of your Dockerfile, add:
+RUN echo '#!/bin/bash\ndotnet ef database update\nexec dotnet ManagementApp.dll' > /app/start.sh && chmod +x /app/start.sh
+
+# Then change CMD to:
+CMD ["/app/start.sh"]

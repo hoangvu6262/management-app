@@ -45,8 +45,6 @@ export default function AnalyticsPage() {
   const loadAnalyticsData = async (currentFilter: AnalyticsFilter = {}) => {
     try {
       setLoading(true);
-      console.log("🔄 Loading analytics data with filter:", currentFilter);
-
       // Load all data in parallel with better error handling
       const results = await Promise.allSettled([
         analyticsService.getDashboardAnalytics(currentFilter),
@@ -58,35 +56,30 @@ export default function AnalyticsPage() {
 
       // Handle results with proper error checking
       if (results[0].status === "fulfilled") {
-        // console.log('✅ Dashboard data:', results[0].value)
         setDashboardData(results[0].value);
       } else {
         console.error("❌ Dashboard data failed:", results[0].reason);
       }
 
       if (results[1].status === "fulfilled") {
-        // console.log('✅ Status distribution:', results[1].value)
         setStatusDistribution(results[1].value);
       } else {
         console.error("❌ Status distribution failed:", results[1].reason);
       }
 
       if (results[2].status === "fulfilled") {
-        // console.log('✅ Revenue profit trend:', results[2].value)
         setRevenueProfitTrend(results[2].value);
       } else {
         console.error("❌ Revenue profit trend failed:", results[2].reason);
       }
 
       if (results[3].status === "fulfilled") {
-        // console.log('✅ Match type distribution:', results[3].value)
         setMatchTypeDistribution(results[3].value);
       } else {
         console.error("❌ Match type distribution failed:", results[3].reason);
       }
 
       if (results[4].status === "fulfilled") {
-        // console.log('✅ Personnel analysis:', results[4].value)
         setPersonnelAnalysis(results[4].value);
       } else {
         console.error("❌ Personnel analysis failed:", results[4].reason);
@@ -122,7 +115,8 @@ export default function AnalyticsPage() {
   };
 
   useEffect(() => {
-    loadAnalyticsData();
+    // Try loading with explicit empty filter first
+    loadAnalyticsData({}); // Explicit empty object
   }, []);
 
   if (loading) {
@@ -136,8 +130,15 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!dashboardData) {
-    // console.log('⚠️ Dashboard data is null/undefined, showing retry screen');
+  // Only show "No data available" if ALL data is missing, not just dashboardData
+  const hasAnyData =
+    dashboardData ||
+    statusDistribution.length > 0 ||
+    revenueProfitTrend.length > 0 ||
+    matchTypeDistribution.length > 0 ||
+    personnelAnalysis;
+
+  if (!hasAnyData) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -153,20 +154,6 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Debug Info - Remove in production */}
-      {/* {process.env.NODE_ENV === "development" && (
-        <div className="bg-muted p-4 rounded-lg">
-          <h3 className="font-semibold mb-2">Debug Info:</h3>
-          <p>Dashboard Data: {dashboardData ? "Available" : "Null"}</p>
-          <p>Status Distribution: {statusDistribution?.length || 0} items</p>
-          <p>Revenue Profit Trend: {revenueProfitTrend?.length || 0} items</p>
-          <p>
-            Match Type Distribution: {matchTypeDistribution?.length || 0} items
-          </p>
-          <p>Personnel Analysis: {personnelAnalysis ? "Available" : "Null"}</p>
-        </div>
-      )} */}
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Phần tiêu đề */}
@@ -175,8 +162,10 @@ export default function AnalyticsPage() {
             Analytics Dashboard
           </h1>
           <p className="text-muted-foreground text-sm">
-            {dashboardData.period} • Generated at{" "}
-            {new Date(dashboardData.generatedAt).toLocaleString()}
+            {dashboardData?.period || "All Time"} • Generated at{" "}
+            {dashboardData?.generatedAt
+              ? new Date(dashboardData.generatedAt).toLocaleString()
+              : new Date().toLocaleString()}
           </p>
         </div>
 
@@ -206,11 +195,13 @@ export default function AnalyticsPage() {
       />
 
       {/* Key Metrics */}
-      <AnalyticsStats
-        financialStats={dashboardData.financialStats}
-        matchStats={dashboardData.matchStats}
-        personnelStats={dashboardData.personnelStats}
-      />
+      {dashboardData && (
+        <AnalyticsStats
+          financialStats={dashboardData.financialStats}
+          matchStats={dashboardData.matchStats}
+          personnelStats={dashboardData.personnelStats}
+        />
+      )}
 
       {/* Financial Charts */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -219,7 +210,7 @@ export default function AnalyticsPage() {
           title="Revenue vs Profit Trend"
         />
         <RevenueBarChart
-          data={dashboardData.monthlyTrends}
+          data={dashboardData?.monthlyTrends || []}
           title="Monthly Revenue"
         />
       </div>
@@ -247,185 +238,189 @@ export default function AnalyticsPage() {
       )}
 
       {/* Top Performers */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <TopStadiums
-          data={dashboardData.topStadiums}
-          title="Top 5 Stadiums by Revenue"
-          limit={5}
-        />
-        <TopTeams
-          data={dashboardData.topTeams}
-          title="Top 5 Teams by Revenue"
-          limit={5}
-        />
-      </div>
+      {dashboardData && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <TopStadiums
+            data={dashboardData.topStadiums}
+            title="Top 5 Stadiums by Revenue"
+            limit={5}
+          />
+          <TopTeams
+            data={dashboardData.topTeams}
+            title="Top 5 Teams by Revenue"
+            limit={5}
+          />
+        </div>
+      )}
 
       {/* Additional Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Financial Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              💰 Financial Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Total Revenue
-                </span>
-                <span className="font-semibold">
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                    minimumFractionDigits: 0,
-                  }).format(dashboardData.financialStats.totalRevenue)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Total Cost
-                </span>
-                <span className="font-semibold text-red-600">
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                    minimumFractionDigits: 0,
-                  }).format(dashboardData.financialStats.totalCost)}
-                </span>
-              </div>
-              <div className="flex justify-between border-t pt-2">
-                <span className="text-sm font-medium">Net Profit</span>
-                <span
-                  className={`font-bold ${
-                    dashboardData.financialStats.totalProfit > 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                    minimumFractionDigits: 0,
-                  }).format(dashboardData.financialStats.totalProfit)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Profit Margin
-                </span>
-                <span
-                  className={`font-semibold ${
-                    dashboardData.financialStats.profitMargin > 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {dashboardData.financialStats.profitMargin.toFixed(2)}%
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Match Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              ⚽ Match Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Total Matches
-                </span>
-                <span className="font-semibold">
-                  {dashboardData.matchStats.totalMatches}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-green-600">✅ Completed</span>
-                <span className="font-semibold">
-                  {dashboardData.matchStats.completedMatches}(
-                  {dashboardData.matchStats.completedPercentage.toFixed(1)}%)
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-yellow-600">⏳ Pending</span>
-                <span className="font-semibold">
-                  {dashboardData.matchStats.pendingMatches}(
-                  {dashboardData.matchStats.pendingPercentage.toFixed(1)}%)
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-red-600">❌ Cancelled</span>
-                <span className="font-semibold">
-                  {dashboardData.matchStats.cancelledMatches}(
-                  {dashboardData.matchStats.cancelledPercentage.toFixed(1)}%)
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Personnel Summary */}
-        {personnelAnalysis && (
+      {dashboardData && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Financial Summary */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">
-                📷 Personnel Summary
+                💰 Financial Summary
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Photographer Cost
+                    Total Revenue
                   </span>
                   <span className="font-semibold">
                     {new Intl.NumberFormat("vi-VN", {
                       style: "currency",
                       currency: "VND",
                       minimumFractionDigits: 0,
-                    }).format(personnelAnalysis.totalPhotographerCost)}
+                    }).format(dashboardData.financialStats.totalRevenue)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Cameraman Cost
+                    Total Cost
                   </span>
-                  <span className="font-semibold">
+                  <span className="font-semibold text-red-600">
                     {new Intl.NumberFormat("vi-VN", {
                       style: "currency",
                       currency: "VND",
                       minimumFractionDigits: 0,
-                    }).format(personnelAnalysis.totalCameramanCost)}
+                    }).format(dashboardData.financialStats.totalCost)}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="text-sm font-medium">Net Profit</span>
+                  <span
+                    className={`font-bold ${
+                      dashboardData.financialStats.totalProfit > 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                      minimumFractionDigits: 0,
+                    }).format(dashboardData.financialStats.totalProfit)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Photographer Rate
+                    Profit Margin
                   </span>
-                  <span className="font-semibold">
-                    {personnelAnalysis.photographerRate.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Cameraman Rate
-                  </span>
-                  <span className="font-semibold">
-                    {personnelAnalysis.cameramanRate.toFixed(1)}%
+                  <span
+                    className={`font-semibold ${
+                      dashboardData.financialStats.profitMargin > 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {dashboardData.financialStats.profitMargin.toFixed(2)}%
                   </span>
                 </div>
               </div>
             </CardContent>
           </Card>
-        )}
-      </div>
+
+          {/* Match Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                ⚽ Match Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Total Matches
+                  </span>
+                  <span className="font-semibold">
+                    {dashboardData.matchStats.totalMatches}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-green-600">✅ Completed</span>
+                  <span className="font-semibold">
+                    {dashboardData.matchStats.completedMatches}(
+                    {dashboardData.matchStats.completedPercentage.toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-yellow-600">⏳ Pending</span>
+                  <span className="font-semibold">
+                    {dashboardData.matchStats.pendingMatches}(
+                    {dashboardData.matchStats.pendingPercentage.toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-red-600">❌ Cancelled</span>
+                  <span className="font-semibold">
+                    {dashboardData.matchStats.cancelledMatches}(
+                    {dashboardData.matchStats.cancelledPercentage.toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Personnel Summary */}
+          {personnelAnalysis && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">
+                  📷 Personnel Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Photographer Cost
+                    </span>
+                    <span className="font-semibold">
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                        minimumFractionDigits: 0,
+                      }).format(personnelAnalysis.totalPhotographerCost)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Cameraman Cost
+                    </span>
+                    <span className="font-semibold">
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                        minimumFractionDigits: 0,
+                      }).format(personnelAnalysis.totalCameramanCost)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Photographer Rate
+                    </span>
+                    <span className="font-semibold">
+                      {personnelAnalysis.photographerRate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Cameraman Rate
+                    </span>
+                    <span className="font-semibold">
+                      {personnelAnalysis.cameramanRate.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

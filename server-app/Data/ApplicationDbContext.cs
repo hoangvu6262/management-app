@@ -13,6 +13,7 @@ namespace ManagementApp.Data
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<FootballMatch> FootballMatches { get; set; }
         public DbSet<CalendarEvent> CalendarEvents { get; set; }
+        public DbSet<SystemConfiguration> SystemConfigurations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

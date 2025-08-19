@@ -1,4 +1,4 @@
-import { protectedApi } from './protectedApi';
+import { protectedApi } from "./protectedApi";
 
 export interface AnalyticsFilter {
   fromDate?: string;
@@ -145,38 +145,44 @@ export interface AnalyticsDashboard {
 class AnalyticsService {
   private buildQueryParams(filter: AnalyticsFilter): string {
     const params = new URLSearchParams();
-    
-    if (filter.fromDate) params.append('fromDate', filter.fromDate);
-    if (filter.toDate) params.append('toDate', filter.toDate);
-    if (filter.stadium) params.append('stadium', filter.stadium);
-    if (filter.team) params.append('team', filter.team);
-    if (filter.type) params.append('type', filter.type);
-    if (filter.status) params.append('status', filter.status);
-    
+
+    if (filter.fromDate) params.append("fromDate", filter.fromDate);
+    if (filter.toDate) params.append("toDate", filter.toDate);
+    if (filter.stadium) params.append("stadium", filter.stadium);
+    if (filter.team) params.append("team", filter.team);
+    if (filter.type) params.append("type", filter.type);
+    if (filter.status) params.append("status", filter.status);
+
     return params.toString();
   }
 
-  async getDashboardAnalytics(filter: AnalyticsFilter = {}): Promise<AnalyticsDashboard> {
+  async getDashboardAnalytics(
+    filter: AnalyticsFilter = {}
+  ): Promise<AnalyticsDashboard> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      console.log('📊 Calling dashboard API with params:', queryParams);
-      const response = await protectedApi.get(`/analytics/dashboard?${queryParams}`);
-      console.log('📊 Dashboard API response:', response);
+      const response = await protectedApi.get(
+        `/analytics/dashboard?${queryParams}`
+      );
       return response.data || response; // Handle both nested and direct data
     } catch (error) {
-      console.error('Failed to load dashboard analytics:', error);
+      console.error("Failed to load dashboard analytics:", error);
       // Return empty/default data structure on error
       return this.getEmptyDashboard();
     }
   }
 
-  async getFinancialStats(filter: AnalyticsFilter = {}): Promise<FinancialStats> {
+  async getFinancialStats(
+    filter: AnalyticsFilter = {}
+  ): Promise<FinancialStats> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const response = await protectedApi.get(`/analytics/financial?${queryParams}`);
+      const response = await protectedApi.get(
+        `/analytics/financial?${queryParams}`
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to load financial stats:', error);
+      console.error("Failed to load financial stats:", error);
       return this.getEmptyDashboard().financialStats;
     }
   }
@@ -184,130 +190,174 @@ class AnalyticsService {
   async getMatchStats(filter: AnalyticsFilter = {}): Promise<MatchStats> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const response = await protectedApi.get(`/analytics/matches?${queryParams}`);
+      const response = await protectedApi.get(
+        `/analytics/matches?${queryParams}`
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to load match stats:', error);
+      console.error("Failed to load match stats:", error);
       return this.getEmptyDashboard().matchStats;
     }
   }
 
-  async getPersonnelStats(filter: AnalyticsFilter = {}): Promise<PersonnelStats> {
+  async getPersonnelStats(
+    filter: AnalyticsFilter = {}
+  ): Promise<PersonnelStats> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const response = await protectedApi.get(`/analytics/personnel?${queryParams}`);
+      const response = await protectedApi.get(
+        `/analytics/personnel?${queryParams}`
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to load personnel stats:', error);
+      console.error("Failed to load personnel stats:", error);
       return this.getEmptyDashboard().personnelStats;
     }
   }
 
-  async getMonthlyTrends(filter: AnalyticsFilter = {}): Promise<MonthlyTrend[]> {
+  async getMonthlyTrends(
+    filter: AnalyticsFilter = {}
+  ): Promise<MonthlyTrend[]> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const response = await protectedApi.get(`/analytics/trends?${queryParams}`);
+      const response = await protectedApi.get(
+        `/analytics/trends?${queryParams}`
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to load monthly trends:', error);
+      console.error("Failed to load monthly trends:", error);
       return [];
     }
   }
 
-  async getTopStadiums(filter: AnalyticsFilter = {}, limit: number = 10): Promise<TopStadium[]> {
+  async getTopStadiums(
+    filter: AnalyticsFilter = {},
+    limit: number = 10
+  ): Promise<TopStadium[]> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const params = queryParams ? `${queryParams}&limit=${limit}` : `limit=${limit}`;
-      const response = await protectedApi.get(`/analytics/top-stadiums?${params}`);
+      const params = queryParams
+        ? `${queryParams}&limit=${limit}`
+        : `limit=${limit}`;
+      const response = await protectedApi.get(
+        `/analytics/top-stadiums?${params}`
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to load top stadiums:', error);
+      console.error("Failed to load top stadiums:", error);
       return [];
     }
   }
 
-  async getTopTeams(filter: AnalyticsFilter = {}, limit: number = 10): Promise<TopTeam[]> {
+  async getTopTeams(
+    filter: AnalyticsFilter = {},
+    limit: number = 10
+  ): Promise<TopTeam[]> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const params = queryParams ? `${queryParams}&limit=${limit}` : `limit=${limit}`;
+      const params = queryParams
+        ? `${queryParams}&limit=${limit}`
+        : `limit=${limit}`;
       const response = await protectedApi.get(`/analytics/top-teams?${params}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to load top teams:', error);
+      console.error("Failed to load top teams:", error);
       return [];
     }
   }
 
-  async getStatusDistribution(filter: AnalyticsFilter = {}): Promise<StatusDistribution[]> {
+  async getStatusDistribution(
+    filter: AnalyticsFilter = {}
+  ): Promise<StatusDistribution[]> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const response = await protectedApi.get(`/analytics/status-distribution?${queryParams}`);
-      return response.data;
+      const response = await protectedApi.get(
+        `/analytics/status-distribution?${queryParams}`
+      );
+      // Handle backend response structure: { data: [...], message: ..., errors: ... }
+      return response || [];
     } catch (error) {
-      console.error('Failed to load status distribution:', error);
+      console.error("Failed to load status distribution:", error);
       return [];
     }
   }
 
-  async getRevenueProfitTrend(filter: AnalyticsFilter = {}): Promise<MonthlyFinancialTrend[]> {
+  async getRevenueProfitTrend(
+    filter: AnalyticsFilter = {}
+  ): Promise<MonthlyFinancialTrend[]> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const response = await protectedApi.get(`/analytics/revenue-profit-trend?${queryParams}`);
-      return response.data;
+
+      const response = await protectedApi.get(
+        `/analytics/revenue-profit-trend?${queryParams}`
+      );
+
+      // Handle backend response structure: { data: [...], message: ..., errors: ... }
+      const data = response || [];
+      if (data.length === 0) {
+        console.warn(
+          "⚠️ Revenue profit trend returned empty array - check backend data or filters"
+        );
+      }
+
+      return data;
     } catch (error) {
-      console.error('Failed to load revenue profit trend:', error);
+      console.error("Failed to load revenue profit trend:", error);
       return [];
     }
   }
 
-  async getMatchTypeDistribution(filter: AnalyticsFilter = {}): Promise<MatchTypeDistribution[]> {
+  async getMatchTypeDistribution(
+    filter: AnalyticsFilter = {}
+  ): Promise<MatchTypeDistribution[]> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const response = await protectedApi.get(`/analytics/match-type-distribution?${queryParams}`);
-      return response.data;
+      const response = await protectedApi.get(
+        `/analytics/match-type-distribution?${queryParams}`
+      );
+      // Handle backend response structure: { data: [...], message: ..., errors: ... }
+      return response || [];
     } catch (error) {
-      console.error('Failed to load match type distribution:', error);
+      console.error("Failed to load match type distribution:", error);
       return [];
     }
   }
 
-  async getCancelledAnalysis(filter: AnalyticsFilter = {}): Promise<CancelledAnalysis> {
+  async getCancelledAnalysis(
+    filter: AnalyticsFilter = {}
+  ): Promise<CancelledAnalysis> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const response = await protectedApi.get(`/analytics/cancelled-analysis?${queryParams}`);
+      const response = await protectedApi.get(
+        `/analytics/cancelled-analysis?${queryParams}`
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to load cancelled analysis:', error);
+      console.error("Failed to load cancelled analysis:", error);
       return {
         totalMatches: 0,
         cancelledCount: 0,
         cancellationRate: 0,
         lostRevenue: 0,
         monthlyData: [],
-        reasonAnalysis: []
+        reasonAnalysis: [],
       };
     }
   }
 
-  async getPhotographerCameramanAnalysis(filter: AnalyticsFilter = {}): Promise<PhotoCameraAnalysis> {
+  async getPhotographerCameramanAnalysis(
+    filter: AnalyticsFilter = {}
+  ): Promise<PhotoCameraAnalysis> {
     try {
       const queryParams = this.buildQueryParams(filter);
-      const response = await protectedApi.get(`/analytics/photographer-cameraman-analysis?${queryParams}`);
-      return response.data;
+      const response = await protectedApi.get(
+        `/analytics/photographer-cameraman-analysis?${queryParams}`
+      );
+      // Handle backend response structure: { data: {...}, message: ..., errors: ... }
+      return response || this.getEmptyPersonnelAnalysis();
     } catch (error) {
-      console.error('Failed to load photographer cameraman analysis:', error);
-      return {
-        totalPhotographerCost: 0,
-        totalCameramanCost: 0,
-        totalMatches: 0,
-        matchesWithPhotographer: 0,
-        matchesWithCameraman: 0,
-        matchesWithBoth: 0,
-        photographerRate: 0,
-        cameramanRate: 0,
-        bothRate: 0,
-        monthlyCosts: []
-      };
+      console.error("Failed to load photographer cameraman analysis:", error);
+      return this.getEmptyPersonnelAnalysis();
     }
   }
 
@@ -322,7 +372,7 @@ class AnalyticsService {
         averageRevenuePerMatch: 0,
         averageProfitPerMatch: 0,
         totalDiscount: 0,
-        discountPercentage: 0
+        discountPercentage: 0,
       },
       matchStats: {
         totalMatches: 0,
@@ -331,7 +381,7 @@ class AnalyticsService {
         cancelledMatches: 0,
         completedPercentage: 0,
         pendingPercentage: 0,
-        cancelledPercentage: 0
+        cancelledPercentage: 0,
       },
       personnelStats: {
         totalPhotographerCost: 0,
@@ -341,13 +391,28 @@ class AnalyticsService {
         matchesWithPhotographer: 0,
         matchesWithCameraman: 0,
         photographerParticipationRate: 0,
-        cameramanParticipationRate: 0
+        cameramanParticipationRate: 0,
       },
       monthlyTrends: [],
       topStadiums: [],
       topTeams: [],
       generatedAt: new Date().toISOString(),
-      period: 'No Data'
+      period: "No Data",
+    };
+  }
+
+  private getEmptyPersonnelAnalysis(): PhotoCameraAnalysis {
+    return {
+      totalPhotographerCost: 0,
+      totalCameramanCost: 0,
+      totalMatches: 0,
+      matchesWithPhotographer: 0,
+      matchesWithCameraman: 0,
+      matchesWithBoth: 0,
+      photographerRate: 0,
+      cameramanRate: 0,
+      bothRate: 0,
+      monthlyCosts: [],
     };
   }
 }

@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Receipt,
   CalendarDays,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -30,32 +31,37 @@ const navigation = [
     href: "/analytics/",
     icon: BarChart3,
   },
-  {
-    name: "Projects",
-    href: "/projects/",
-    icon: Receipt,
-  },
-  {
-    name: "Schedule",
-    href: "/schedule/",
-    icon: CalendarDays,
-  },
+  // {
+  //   name: "Projects",
+  //   href: "/projects/",
+  //   icon: Receipt,
+  // },
+  // {
+  //   name: "Schedule",
+  //   href: "/schedule/",
+  //   icon: CalendarDays,
+  // },
   {
     name: "Calendar",
     href: "/calendar/",
     icon: Calendar,
   },
   {
-    name: "Messages",
-    href: "/messages/",
-    icon: MessageSquare,
-    badge: 49,
+    name: "Profile",
+    href: "/profile/",
+    icon: User,
   },
-  {
-    name: "Notification",
-    href: "/notifications/",
-    icon: Bell,
-  },
+  // {
+  //   name: "Messages",
+  //   href: "/messages/",
+  //   icon: MessageSquare,
+  //   badge: 49,
+  // },
+  // {
+  //   name: "Notification",
+  //   href: "/notifications/",
+  //   icon: Bell,
+  // },
   {
     name: "Settings",
     href: "/settings/",
@@ -85,8 +91,8 @@ export function Sidebar({ className, isOpen = false, onClose }: SidebarProps) {
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col bg-sidebar-bg border-r border-sidebar-border transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto",
-          isOpen ? "translate-x-0" : "-translate-x-full",
+          "fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col bg-sidebar-bg border-r border-sidebar-border transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto lg:w-64",
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           className
         )}
       >
@@ -134,7 +140,7 @@ export function Sidebar({ className, isOpen = false, onClose }: SidebarProps) {
                     )}
                   />
                   <span className="truncate">{item.name}</span>
-                  {item.badge && (
+                  {/* {item.badge && (
                     <span
                       className={cn(
                         "ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-full",
@@ -145,7 +151,7 @@ export function Sidebar({ className, isOpen = false, onClose }: SidebarProps) {
                     >
                       {item.badge}
                     </span>
-                  )}
+                  )} */}
                 </div>
               </Link>
             );
@@ -153,7 +159,7 @@ export function Sidebar({ className, isOpen = false, onClose }: SidebarProps) {
         </nav>
 
         {/* User Profile */}
-        <div className="border-t border-sidebar-border p-4">
+        {/* <div className="border-t border-sidebar-border p-4">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center flex-shrink-0">
               <span className="text-white font-medium text-sm">Tr</span>
@@ -170,7 +176,7 @@ export function Sidebar({ className, isOpen = false, onClose }: SidebarProps) {
               <Settings className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
     </>
   );

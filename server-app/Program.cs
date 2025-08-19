@@ -178,6 +178,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IFootballMatchService, FootballMatchService>();
 builder.Services.AddScoped<ICalendarEventService, CalendarEventService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 var app = builder.Build();
 
@@ -245,8 +247,18 @@ using (var scope = app.Services.CreateScope())
         {
             Console.WriteLine("✅ Database connection successful");
 
-            await context.Database.EnsureCreatedAsync();
-            Console.WriteLine("✅ Database schema ensured");
+            // Skip migrations in production temporarily to avoid conflicts
+            if (app.Environment.IsProduction())
+            {
+                Console.WriteLine("⚠️ Skipping migrations in production (manual schema management)");
+                Console.WriteLine("✅ Using manually configured database schema");
+            }
+            else
+            {
+                // For development, ensure database is created
+                await context.Database.EnsureCreatedAsync();
+                Console.WriteLine("✅ Database schema ensured");
+            }
 
             // Seed default admin user
             if (!context.Users.Any())

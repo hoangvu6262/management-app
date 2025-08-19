@@ -1,0 +1,82 @@
+/* Mobile-specific styles for Profile page */
+
+@media (max-width: 640px) {
+  /* Ensure sidebar doesn't interfere on mobile */
+  .sidebar-mobile-hidden {
+    transform: translateX(-100%);
+  }
+  
+  /* Make cards more compact on mobile */
+  .profile-card-mobile {
+    padding: 1rem;
+  }
+  
+  /* Stack buttons vertically on very small screens */
+  .profile-buttons-mobile {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  /* Ensure text is readable on small screens */
+  .profile-text-mobile {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  
+  /* Make tabs scrollable horizontally */
+  .profile-tabs-mobile {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .profile-tabs-mobile::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Improve touch targets on mobile */
+@media (max-width: 768px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Larger form inputs on mobile */
+  .profile-input-mobile {
+    height: 2.75rem;
+    font-size: 1rem;
+  }
+  
+  /* Better spacing for mobile forms */
+  .profile-form-mobile {
+    gap: 1.5rem;
+  }
+}
+
+/* Ensure proper viewport behavior */
+.profile-container {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Mobile-optimized grid */
+.profile-grid-mobile {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .profile-grid-mobile {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .profile-grid-mobile {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}

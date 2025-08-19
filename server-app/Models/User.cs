@@ -31,6 +31,16 @@ namespace ManagementApp.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+        // Security properties
+        public bool TwoFactorEnabled { get; set; } = false;
+        public string? TwoFactorSecretKey { get; set; }
+        public string? BackupCodes { get; set; } // JSON array stored as string
+        public bool EmailVerified { get; set; } = false;
+        public string? EmailVerificationToken { get; set; }
+        public DateTime? LastLoginAt { get; set; }
+        public int FailedLoginAttempts { get; set; } = 0;
+        public DateTime? LockoutEnd { get; set; }
+
         // Navigation properties
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public virtual ICollection<FootballMatch> CreatedFootballMatches { get; set; } = new List<FootballMatch>();

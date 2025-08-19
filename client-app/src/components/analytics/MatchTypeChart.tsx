@@ -1,24 +1,24 @@
-'use client'
+"use client";
 
-import React from 'react'
-import Highcharts from 'highcharts'
-import HighchartsReact from 'highcharts-react-official'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import React from "react";
+import Highcharts from "highcharts";
+import HighchartsReact from "highcharts-react-official";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface MatchTypeChartProps {
   data: Array<{
-    type: string
-    count: number
-    revenue: number
-    percentage: number
-    color: string
-  }>
-  title?: string
+    type: string;
+    count: number;
+    revenue: number;
+    percentage: number;
+    color: string;
+  }>;
+  title?: string;
 }
 
-export const MatchTypeChart: React.FC<MatchTypeChartProps> = ({ 
+export const MatchTypeChart: React.FC<MatchTypeChartProps> = ({
   data = [], // Default to empty array
-  title = "Match Type Distribution" 
+  title = "Match Type Distribution",
 }) => {
   // Early return if no data
   if (!data || data.length === 0) {
@@ -33,59 +33,55 @@ export const MatchTypeChart: React.FC<MatchTypeChartProps> = ({
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
   const options: Highcharts.Options = {
     chart: {
-      type: 'pie',
-      backgroundColor: 'transparent',
+      type: "pie",
+      backgroundColor: "transparent",
     },
     title: {
       text: undefined,
     },
     tooltip: {
-      pointFormat: '<b>{point.y}</b> matches ({point.percentage:.1f}%)<br/>' +
-                   'Revenue: <b>{point.revenue}</b> VND',
-      formatter: function() {
-        const point = this.point as any;
-        const revenue = data.find(d => d.type === point.name)?.revenue || 0;
-        return `<b>${point.name}</b><br/>` +
-               `Matches: <b>${point.y}</b> ({point.percentage:.1f}%)<br/>` +
-               `Revenue: <b>${Highcharts.numberFormat(revenue, 0, '.', ',')}</b> VND`;
-      }
+      pointFormat:
+        "<b>{point.y}</b> matches ({point.percentage:.1f}%)<br/>" +
+        "Revenue: <b>{point.revenue}</b> VND",
     },
     plotOptions: {
       pie: {
         allowPointSelect: true,
-        cursor: 'pointer',
+        cursor: "pointer",
         dataLabels: {
           enabled: true,
-          format: '<b>{point.name}</b>: {point.percentage:.1f}%',
+          format: "<b>{point.name}</b>: {point.percentage:.1f}%",
           style: {
-            fontSize: '12px'
-          }
+            fontSize: "12px",
+          },
         },
-        showInLegend: true
-      }
+        showInLegend: true,
+      },
     },
-    series: [{
-      name: 'Match Types',
-      type: 'pie',
-      data: data.map(item => ({
-        name: item.type,
-        y: item.count,
-        color: item.color
-      }))
-    }],
+    series: [
+      {
+        name: "Match Types",
+        type: "pie",
+        data: data.map((item) => ({
+          name: item.type,
+          y: item.count,
+          color: item.color,
+        })),
+      },
+    ],
     legend: {
-      align: 'center',
-      verticalAlign: 'bottom',
-      layout: 'horizontal'
+      align: "center",
+      verticalAlign: "bottom",
+      layout: "horizontal",
     },
     credits: {
-      enabled: false
-    }
-  }
+      enabled: false,
+    },
+  };
 
   return (
     <Card>
@@ -96,9 +92,9 @@ export const MatchTypeChart: React.FC<MatchTypeChartProps> = ({
         <HighchartsReact
           highcharts={Highcharts}
           options={options}
-          containerProps={{ style: { height: '350px' } }}
+          containerProps={{ style: { height: "350px" } }}
         />
       </CardContent>
     </Card>
-  )
-}
+  );
+};

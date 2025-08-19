@@ -205,7 +205,7 @@ export function LoginForm() {
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({
                             email: "admin@managementapp.com",
-                            password: "admin123",
+                            password: "XuanTrieu@123",
                           }),
                         }
                       );
@@ -227,7 +227,7 @@ export function LoginForm() {
                 <p className="text-xs text-blue-700 dark:text-blue-300">
                   Email: admin@managementapp.com
                   <br />
-                  Password: admin123
+                  Password: Xuantrieu@123
                 </p>
               </div>
 

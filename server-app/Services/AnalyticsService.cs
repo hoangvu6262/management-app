@@ -32,36 +32,35 @@ namespace ManagementApp.Services
 
         public async Task<AnalyticsDashboardDto> GetDashboardAnalyticsAsync(AnalyticsFilterDto filter)
         {
-            // Execute all tasks in parallel
-            var financialStatsTask = GetFinancialStatsAsync(filter);
-            var matchStatsTask = GetMatchStatsAsync(filter);
-            var personnelStatsTask = GetPersonnelStatsAsync(filter);
-            var monthlyTrendsTask = GetMonthlyTrendsAsync(filter);
-            var topStadiumsTask = GetTopStadiumsAsync(filter, 5);
-            var topTeamsTask = GetTopTeamsAsync(filter, 5);
-
-            await Task.WhenAll(
-                financialStatsTask,
-                matchStatsTask,
-                personnelStatsTask,
-                monthlyTrendsTask,
-                topStadiumsTask,
-                topTeamsTask
-            );
-
-            var period = GetPeriodDescription(filter);
-
-            return new AnalyticsDashboardDto
+            try
             {
-                FinancialStats = await financialStatsTask,
-                MatchStats = await matchStatsTask,
-                PersonnelStats = await personnelStatsTask,
-                MonthlyTrends = await monthlyTrendsTask,
-                TopStadiums = await topStadiumsTask,
-                TopTeams = await topTeamsTask,
-                Period = period,
-                GeneratedAt = DateTime.UtcNow
-            };
+                // Execute tasks sequentially to avoid DbContext concurrency issues
+                var financialStats = await GetFinancialStatsAsync(filter);
+                var matchStats = await GetMatchStatsAsync(filter);
+                var personnelStats = await GetPersonnelStatsAsync(filter);
+                var monthlyTrends = await GetMonthlyTrendsAsync(filter);
+                var topStadiums = await GetTopStadiumsAsync(filter, 5);
+                var topTeams = await GetTopTeamsAsync(filter, 5);
+
+                var period = GetPeriodDescription(filter);
+
+                return new AnalyticsDashboardDto
+                {
+                    FinancialStats = financialStats,
+                    MatchStats = matchStats,
+                    PersonnelStats = personnelStats,
+                    MonthlyTrends = monthlyTrends,
+                    TopStadiums = topStadiums,
+                    TopTeams = topTeams,
+                    Period = period,
+                    GeneratedAt = DateTime.UtcNow
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetDashboardAnalyticsAsync: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task<FinancialStatsDto> GetFinancialStatsAsync(AnalyticsFilterDto filter)
@@ -79,7 +78,7 @@ namespace ManagementApp.Services
             var totalRevenue = matches.Sum(m => m.TotalRevenue);
             var totalCost = matches.Sum(m => m.TotalCost + m.RecordingMoneyForPhotographer + m.MoneyForCameraman);
             var totalDiscount = matches.Sum(m => m.Discount);
-            var matchCount = matches.Count;
+            var totalMatchNumber = matches.Sum(m => m.MatchNumber); // Use sum of MatchNumber for averages
 
             var totalProfit = totalRevenue - totalCost - totalDiscount;
             var profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
@@ -91,8 +90,8 @@ namespace ManagementApp.Services
                 TotalCost = totalCost,
                 TotalProfit = totalProfit,
                 ProfitMargin = profitMargin,
-                AverageRevenuePerMatch = matchCount > 0 ? totalRevenue / matchCount : 0,
-                AverageProfitPerMatch = matchCount > 0 ? totalProfit / matchCount : 0,
+                AverageRevenuePerMatch = totalMatchNumber > 0 ? totalRevenue / totalMatchNumber : 0,
+                AverageProfitPerMatch = totalMatchNumber > 0 ? totalProfit / totalMatchNumber : 0,
                 TotalDiscount = totalDiscount,
                 DiscountPercentage = discountPercentage
             };
@@ -101,32 +100,28 @@ namespace ManagementApp.Services
         public async Task<MatchStatsDto> GetMatchStatsAsync(AnalyticsFilterDto filter)
         {
             var query = GetFilteredQuery(filter);
+            var matches = await query.ToListAsync();
 
-            var stats = await query
-                .GroupBy(m => 1)
-                .Select(g => new
-                {
-                    TotalMatches = g.Count(),
-                    CompletedMatches = g.Count(m => m.Status == "COMPLETED"),
-                    PendingMatches = g.Count(m => m.Status == "PENDING"),
-                    CancelledMatches = g.Count(m => m.Status == "CANCELLED")
-                })
-                .FirstOrDefaultAsync();
-
-            if (stats == null)
+            if (!matches.Any())
             {
                 return new MatchStatsDto();
             }
 
+            // Total matches should be sum of MatchNumber, not count of records
+            var totalMatches = matches.Sum(m => m.MatchNumber);
+            var completedMatches = matches.Where(m => m.Status == "COMPLETED").Sum(m => m.MatchNumber);
+            var pendingMatches = matches.Where(m => m.Status == "PENDING").Sum(m => m.MatchNumber);
+            var cancelledMatches = matches.Where(m => m.Status == "CANCELLED").Sum(m => m.MatchNumber);
+
             return new MatchStatsDto
             {
-                TotalMatches = stats.TotalMatches,
-                CompletedMatches = stats.CompletedMatches,
-                PendingMatches = stats.PendingMatches,
-                CancelledMatches = stats.CancelledMatches,
-                CompletedPercentage = stats.TotalMatches > 0 ? (decimal)stats.CompletedMatches / stats.TotalMatches * 100 : 0,
-                PendingPercentage = stats.TotalMatches > 0 ? (decimal)stats.PendingMatches / stats.TotalMatches * 100 : 0,
-                CancelledPercentage = stats.TotalMatches > 0 ? (decimal)stats.CancelledMatches / stats.TotalMatches * 100 : 0
+                TotalMatches = totalMatches,
+                CompletedMatches = completedMatches,
+                PendingMatches = pendingMatches,
+                CancelledMatches = cancelledMatches,
+                CompletedPercentage = totalMatches > 0 ? (decimal)completedMatches / totalMatches * 100 : 0,
+                PendingPercentage = totalMatches > 0 ? (decimal)pendingMatches / totalMatches * 100 : 0,
+                CancelledPercentage = totalMatches > 0 ? (decimal)cancelledMatches / totalMatches * 100 : 0
             };
         }
 
@@ -172,7 +167,7 @@ namespace ManagementApp.Services
                     Month = g.Key.Month,
                     Revenue = g.Sum(m => m.TotalRevenue),
                     Cost = g.Sum(m => m.TotalCost + m.RecordingMoneyForPhotographer + m.MoneyForCameraman + m.Discount),
-                    MatchCount = g.Count()
+                    MatchCount = g.Sum(m => m.MatchNumber) // Use sum of MatchNumber instead of Count()
                 })
                 .OrderBy(x => x.Year)
                 .ThenBy(x => x.Month)
@@ -199,7 +194,7 @@ namespace ManagementApp.Services
                 .Select(g => new TopStadiumDto
                 {
                     Stadium = g.Key,
-                    MatchCount = g.Count(),
+                    MatchCount = g.Sum(m => m.MatchNumber), // Use sum of MatchNumber
                     TotalRevenue = g.Sum(m => m.TotalRevenue),
                     TotalProfit = g.Sum(m => m.TotalRevenue - m.TotalCost - m.RecordingMoneyForPhotographer - m.MoneyForCameraman - m.Discount),
                     AverageRevenue = g.Average(m => m.TotalRevenue)
@@ -219,7 +214,7 @@ namespace ManagementApp.Services
                 .Select(g => new TopTeamDto
                 {
                     Team = g.Key,
-                    MatchCount = g.Count(),
+                    MatchCount = g.Sum(m => m.MatchNumber), // Use sum of MatchNumber
                     TotalRevenue = g.Sum(m => m.TotalRevenue),
                     TotalProfit = g.Sum(m => m.TotalRevenue - m.TotalCost - m.RecordingMoneyForPhotographer - m.MoneyForCameraman - m.Discount),
                     AverageRevenue = g.Average(m => m.TotalRevenue)
@@ -306,7 +301,7 @@ namespace ManagementApp.Services
                     Month = g.Key.Month,
                     Revenue = g.Sum(m => m.TotalRevenue),
                     Cost = g.Sum(m => m.TotalCost + m.RecordingMoneyForPhotographer + m.MoneyForCameraman + m.Discount),
-                    MatchCount = g.Count()
+                    MatchCount = g.Sum(m => m.MatchNumber) // Use sum of MatchNumber
                 })
                 .OrderBy(x => x.Year)
                 .ThenBy(x => x.Month)
@@ -354,9 +349,9 @@ namespace ManagementApp.Services
             var query = GetFilteredQuery(filter);
             var allMatches = await query.ToListAsync();
 
-            var totalMatches = allMatches.Count;
+            var totalMatches = allMatches.Sum(m => m.MatchNumber); // Use sum of MatchNumber
             var cancelledMatches = allMatches.Where(m => m.Status == "CANCELLED").ToList();
-            var cancelledCount = cancelledMatches.Count;
+            var cancelledCount = cancelledMatches.Sum(m => m.MatchNumber); // Use sum of MatchNumber
             var lostRevenue = cancelledMatches.Sum(m => m.TotalRevenue);
 
             // Monthly cancellation data
@@ -365,9 +360,9 @@ namespace ManagementApp.Services
                 .Select(g => new CancelledByMonthDto
                 {
                     Month = $"{g.Key.Year:0000}-{g.Key.Month:00}",
-                    CancelledCount = g.Count(m => m.Status == "CANCELLED"),
-                    TotalCount = g.Count(),
-                    Rate = g.Count() > 0 ? (decimal)g.Count(m => m.Status == "CANCELLED") / g.Count() * 100 : 0
+                    CancelledCount = g.Where(m => m.Status == "CANCELLED").Sum(m => m.MatchNumber),
+                    TotalCount = g.Sum(m => m.MatchNumber),
+                    Rate = g.Sum(m => m.MatchNumber) > 0 ? (decimal)g.Where(m => m.Status == "CANCELLED").Sum(m => m.MatchNumber) / g.Sum(m => m.MatchNumber) * 100 : 0
                 })
                 .OrderBy(x => x.Month)
                 .ToList();
@@ -400,10 +395,10 @@ namespace ManagementApp.Services
             var query = GetFilteredQuery(filter);
             var matches = await query.ToListAsync();
 
-            var totalMatches = matches.Count;
-            var matchesWithPhotographer = matches.Count(m => m.RecordingMoneyForPhotographer > 0);
-            var matchesWithCameraman = matches.Count(m => m.MoneyForCameraman > 0);
-            var matchesWithBoth = matches.Count(m => m.RecordingMoneyForPhotographer > 0 && m.MoneyForCameraman > 0);
+            var totalMatches = matches.Sum(m => m.MatchNumber); // Use sum of MatchNumber
+            var matchesWithPhotographer = matches.Where(m => m.RecordingMoneyForPhotographer > 0).Sum(m => m.MatchNumber);
+            var matchesWithCameraman = matches.Where(m => m.MoneyForCameraman > 0).Sum(m => m.MatchNumber);
+            var matchesWithBoth = matches.Where(m => m.RecordingMoneyForPhotographer > 0 && m.MoneyForCameraman > 0).Sum(m => m.MatchNumber);
 
             var monthlyCosts = matches
                 .GroupBy(m => new { Year = m.Date.Year, Month = m.Date.Month })
@@ -412,7 +407,7 @@ namespace ManagementApp.Services
                     Month = $"{g.Key.Year:0000}-{g.Key.Month:00}",
                     PhotographerCost = g.Sum(m => m.RecordingMoneyForPhotographer),
                     CameramanCost = g.Sum(m => m.MoneyForCameraman),
-                    MatchCount = g.Count()
+                    MatchCount = g.Sum(m => m.MatchNumber) // Use sum of MatchNumber
                 })
                 .OrderBy(x => x.Month)
                 .ToList();
